@@ -48,24 +48,61 @@ function setup() {
 }
 
 function createGameAssets() {
-  // Create ship images
+  // Create ship images - making them larger
   for (let i = 0; i < 2; i++) {
-    let shipImg = createGraphics(gameState.tileSize/2, gameState.tileSize/2);
-    shipImg.background(i === 0 ? "#ff4444" : "#4444ff");
-    shipImg.fill(0);
-    shipImg.stroke(255);
+    let shipImg = createGraphics(gameState.tileSize*0.7, gameState.tileSize*0.7); // Bigger ships
+    let playerColor = i === 0 ? "#ff4444" : "#4444ff";
+    
+    // Set background to transparent
+    shipImg.clear();
+    
+    // Simple sideways-facing ship
+    shipImg.fill(playerColor);
+    shipImg.stroke(0);
     shipImg.strokeWeight(2);
+    
+    // Hull - simple boat shape facing right
     shipImg.beginShape();
-    shipImg.vertex(shipImg.width/2, 5);
-    shipImg.vertex(shipImg.width-5, shipImg.height-10);
-    shipImg.vertex(shipImg.width/2, shipImg.height-5);
-    shipImg.vertex(5, shipImg.height-10);
+    shipImg.vertex(shipImg.width*0.2, shipImg.height*0.6);  // Bottom left
+    shipImg.vertex(shipImg.width*0.8, shipImg.height*0.6);  // Bottom right
+    shipImg.vertex(shipImg.width*0.9, shipImg.height*0.5);  // Front point
+    shipImg.vertex(shipImg.width*0.8, shipImg.height*0.4);  // Top right
+    shipImg.vertex(shipImg.width*0.2, shipImg.height*0.4);  // Top left
     shipImg.endShape(CLOSE);
-    shipImg.fill(255);
+    
+    // Deck
+    shipImg.fill(220, 180, 130);
     shipImg.noStroke();
-    shipImg.textSize(12);
+    shipImg.rect(shipImg.width*0.25, shipImg.height*0.4, shipImg.width*0.5, shipImg.height*0.05);
+    
+    // Cabin
+    shipImg.fill(255);
+    shipImg.stroke(0);
+    shipImg.strokeWeight(1);
+    shipImg.rect(shipImg.width*0.35, shipImg.height*0.3, shipImg.width*0.25, shipImg.height*0.1);
+    
+    // Smokestack
+    shipImg.fill(80);
+    shipImg.rect(shipImg.width*0.45, shipImg.height*0.2, shipImg.width*0.1, shipImg.height*0.1);
+    
+    // Simple steam
+    shipImg.noStroke();
+    shipImg.fill(255, 255, 255, 150);
+    shipImg.ellipse(shipImg.width*0.5, shipImg.height*0.15, shipImg.width*0.1, shipImg.width*0.05);
+    
+    // Player number
+    shipImg.fill(255);
+    shipImg.stroke(0);
+    shipImg.strokeWeight(1);
+    shipImg.textSize(16);
     shipImg.textAlign(CENTER, CENTER);
-    shipImg.text(`Ship ${i+1}`, shipImg.width/2, shipImg.height/2);
+    shipImg.text(`${i + 1}`, shipImg.width*0.5, shipImg.height*0.5);
+    
+    // Water splash at the front
+    shipImg.noStroke();
+    shipImg.fill(255, 255, 255, 150);
+    shipImg.ellipse(shipImg.width*0.85, shipImg.height*0.6, shipImg.width*0.1, shipImg.height*0.05);
+    
     shipImages[i] = shipImg;
   }
   
@@ -313,13 +350,63 @@ function drawBoard() {
   for (let i = 0; i < gameState.players.length; i++) {
     let player = gameState.players[i];
     if (player.ship) {
-      image(
-        shipImages[i], 
-        player.ship.x * gameState.tileSize - gameState.tileSize/4, 
-        player.ship.y * gameState.tileSize - gameState.tileSize/4, 
-        gameState.tileSize/2, 
-        gameState.tileSize/2
-      );
+      let shipX = player.ship.x * gameState.tileSize - shipImages[i].width/2;
+      let shipY = player.ship.y * gameState.tileSize - shipImages[i].height/2;
+      
+      // Draw active ship indicator
+      if (i === gameState.currentPlayer) {
+        push();
+        translate(player.ship.x * gameState.tileSize, player.ship.y * gameState.tileSize);
+        
+        // Animated highlight circle
+        noFill();
+        stroke(255, 255, 0, 150 + sin(frameCount * 0.1) * 50);
+        strokeWeight(3);
+        ellipse(0, 0, gameState.tileSize * 0.9, gameState.tileSize * 0.9);
+        
+        // Direction arrows if in movement mode
+        if (gameState.movementMode && i === gameState.currentPlayer) {
+          let arrowSize = gameState.tileSize * 0.2;
+          fill(255, 255, 0, 200);
+          noStroke();
+          
+          // Check each direction for valid moves
+          let directions = [
+            {dx: 0, dy: -1, angle: -PI/2}, // top
+            {dx: 1, dy: 0, angle: 0},      // right
+            {dx: 0, dy: 1, angle: PI/2},   // bottom
+            {dx: -1, dy: 0, angle: PI}     // left
+          ];
+          
+          for (let dir of directions) {
+            let newX = player.ship.x + dir.dx;
+            let newY = player.ship.y + dir.dy;
+            
+            if (isValidMoveTarget(newX, newY)) {
+              push();
+              translate(dir.dx * gameState.tileSize * 0.6, dir.dy * gameState.tileSize * 0.6);
+              rotate(dir.angle);
+              
+              // Arrow
+              beginShape();
+              vertex(0, -arrowSize);
+              vertex(arrowSize, 0);
+              vertex(0, arrowSize);
+              endShape(CLOSE);
+              
+              // Pulsing effect
+              let pulseSize = 5 + sin(frameCount * 0.2) * 2;
+              fill(255, 255, 0, 100);
+              ellipse(0, 0, pulseSize, pulseSize);
+              pop();
+            }
+          }
+        }
+        pop();
+      }
+      
+      // Draw the ship
+      image(shipImages[i], shipX, shipY);
     }
   }
   
@@ -1315,7 +1402,11 @@ function updateScore() {
     ];
     
     for (let dir of directions) {
-      let adjKey = `${x + dir.dx},${y + dir.dy}`;
+      let adjX = x + dir.dx;
+      let adjY = y + dir.dy;
+      let adjKey = `${adjX},${adjY}`;
+      
+      // If any adjacent position is empty, the tile is not explored
       if (!gameState.placedTiles[adjKey]) {
         isSurrounded = false;
         break;
