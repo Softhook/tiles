@@ -352,9 +352,10 @@ function drawTile(tile, x, y) {
     rotate(i * HALF_PI);
     
     if (rotatedEdges[i] === 1) {
-      // Land - more distinct color and shape
-      fill(240, 230, 140); // Sand color
+      // Land - more distinct color and shape with beach gradient
       noStroke();
+      // Darker sand at the back
+      fill(210, 180, 140);
       beginShape();
       vertex(-tileSize/2, -tileSize/2);
       vertex(tileSize/2, -tileSize/2);
@@ -362,9 +363,18 @@ function drawTile(tile, x, y) {
       vertex(-tileSize/2, -tileSize/2 + tileSize/4);
       endShape(CLOSE);
       
+      // Lighter sand at the front
+      fill(240, 230, 140);
+      beginShape();
+      vertex(-tileSize/2, -tileSize/2);
+      vertex(tileSize/2, -tileSize/2);
+      vertex(tileSize/2, -tileSize/2 + tileSize/6);
+      vertex(-tileSize/2, -tileSize/2 + tileSize/6);
+      endShape(CLOSE);
+      
     } else {
-      // Water - add a visual indicator
-      fill(65, 105, 225, 100); // Transparent blue
+      // Water - add wave texture
+      fill(65, 105, 225, 100);
       noStroke();
       beginShape();
       vertex(-tileSize/2, -tileSize/2);
@@ -373,14 +383,14 @@ function drawTile(tile, x, y) {
       vertex(-tileSize/2, -tileSize/2 + tileSize/8);
       endShape(CLOSE);
       
-      // Add wave texture
-      stroke(255, 255, 255, 100);
+      // Animated waves
+      stroke(255, 255, 255, 150);
       strokeWeight(1);
       for (let j = 0; j < 3; j++) {
         let y = -tileSize/2 + j * 5 + 2;
         beginShape();
         for (let x = -tileSize/2; x <= tileSize/2; x += 5) {
-          vertex(x, y + sin(x * 0.1) * 2);
+          vertex(x, y + sin(frameCount * 0.05 + x * 0.1) * 2);
         }
         endShape();
       }
@@ -393,66 +403,124 @@ function drawTile(tile, x, y) {
   translate(x + tileSize/2, y + tileSize/2);
   
   if (tile.hasLighthouse) {
-    // Lighthouse
-    fill(255);
+    // Find the land edge to place the lighthouse
+    let landEdgeIndex = rotatedEdges.indexOf(1);
+    let lighthouseRotation = landEdgeIndex !== -1 ? landEdgeIndex * HALF_PI : 0;
+    
+    push();
+    rotate(lighthouseRotation);
+    
+    // Base of lighthouse
+    fill(200);
     stroke(0);
     strokeWeight(1);
-    rect(-10, -20, 20, 40);
+    rect(-12, -5, 24, 40);
     
-    fill(255, 0, 0);
-    noStroke();
-    ellipse(0, -25, 15, 15);
+    // Stripes
+    for (let i = 0; i < 3; i++) {
+      fill(255, 0, 0);
+      rect(-12, 5 + i * 10, 24, 5);
+    }
+    
+    // Top of lighthouse
+    fill(150);
+    rect(-15, -15, 30, 10);
+    
+    // Light room
+    fill(255);
+    stroke(0);
+    ellipse(0, -20, 20, 20);
     
     // Light beams
     stroke(255, 255, 0, 150);
     strokeWeight(2);
-    for (let angle = 0; angle < TWO_PI; angle += PI/8) {
-      let len = 30;
-      line(0, -25, cos(angle) * len, -25 + sin(angle) * len);
+    for (let angle = -PI/4; angle <= PI/4; angle += PI/8) {
+      let len = 40;
+      line(0, -20, cos(angle) * len, -20 + sin(angle) * len);
     }
+    pop();
+    
   } else if (tile.hasBeacon) {
-    // Beacon buoy
-    fill(255, 165, 0);
+    // Buoy with more detail
+    // Base
+    stroke(0);
+    strokeWeight(2);
+    fill(255, 0, 0);
+    ellipse(0, 0, 25, 25);
+    
+    // Stripes
+    fill(255);
+    noStroke();
+    rect(-12, -5, 24, 10);
+    
+    // Top light
+    fill(255, 255, 0);
     stroke(0);
     strokeWeight(1);
-    ellipse(0, 0, 20, 20);
+    ellipse(0, 0, 10, 10);
     
-    // Buoy pole
+    // Blinking effect
+    if (frameCount % 30 < 15) {
+      noStroke();
+      fill(255, 255, 0, 150);
+      ellipse(0, 0, 20, 20);
+    }
+    
+    // Chain/rope
     stroke(100);
-    strokeWeight(3);
-    line(0, -15, 0, 15);
-    
-    // Flashing light
-    fill(255, 255, 0);
-    noStroke();
-    ellipse(0, -15, 8, 8);
+    strokeWeight(1);
+    for (let i = 0; i < 4; i++) {
+      let angle = PI/6 + i * PI/12;
+      line(cos(angle) * 12, sin(angle) * 12,
+           cos(angle) * 20, sin(angle) * 20);
+    }
   }
   
   if (tile.hasPier) {
-    // Pier
-    fill(139, 69, 19);
-    noStroke();
-    rect(-25, -5, 50, 10);
-    
-    // Pier posts
-    fill(101, 67, 33);
-    rect(-20, -5, 5, 10);
-    rect(0, -5, 5, 10);
-    rect(15, -5, 5, 10);
+    // Find a land edge to connect the pier
+    let landEdgeIndex = rotatedEdges.indexOf(1);
+    if (landEdgeIndex !== -1) {
+      push();
+      rotate(landEdgeIndex * HALF_PI);
+      
+      // Main pier structure
+      fill(139, 69, 19);
+      noStroke();
+      rect(-25, -8, 50, 16);
+      
+      // Wooden planks texture
+      stroke(101, 67, 33);
+      strokeWeight(1);
+      for (let i = -20; i < 20; i += 5) {
+        line(i, -8, i, 8);
+      }
+      
+      // Support posts
+      fill(101, 67, 33);
+      noStroke();
+      rect(-20, -10, 6, 20);
+      rect(0, -10, 6, 20);
+      rect(15, -10, 6, 20);
+      
+      // Rope details
+      stroke(200);
+      strokeWeight(1);
+      beginShape();
+      for (let x = -25; x < 25; x += 5) {
+        vertex(x, -10 + sin(x * 0.2) * 2);
+      }
+      endShape();
+      pop();
+    }
   }
   
-  // Draw tile ID and edge info for debugging
+  // Draw tile ID for debugging (commented out for production)
+  /*
   fill(0);
   textSize(10);
   textAlign(CENTER, CENTER);
   text(`ID: ${tile.id}`, 0, tileSize/3);
-  
-  // Draw edge indicators
-  //textSize(8);
- // text(`T:${rotatedEdges[0]}`, 0, -tileSize/3);
-  //text(`R:${rotatedEdges[1]}`, tileSize/3, 0);
-  // text(`B:${rotatedEdges[2]}`, 0, tileSize/3);
-//text(`L:${rotatedEdges[3]}`, -tileSize/3, 0);
+  */
   
   pop();
 }
