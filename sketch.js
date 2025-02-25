@@ -17,40 +17,26 @@ let gameState = {
   messageLog: [],
   draggedTile: null,
   draggedTileIndex: -1,
-  tileRotation: 0,
   swapMode: false,
   swapTileIndex: -1,
-  showInstructions: false
+  showInstructions: false,
+  movementMode: false,
+  discardMode: false
 };
 
 // Initialize game assets
-let tileImages = [];
 let shipImages = [];
 let tokenBlue, tokenRed;
 let backgroundImage;
 
-function preload() {
-  // Load tile images
-  for (let i = 0; i < 54; i++) {
-    tileImages[i] = loadImage(`https://via.placeholder.com/${gameState.tileSize}x${gameState.tileSize}/87CEEB/000000?text=Tile${i+1}`);
-  }
-  
-  // Load ship images
-  shipImages[0] = loadImage(`https://via.placeholder.com/${gameState.tileSize/2}x${gameState.tileSize/2}/ff4444/000000?text=Ship1`);
-  shipImages[1] = loadImage(`https://via.placeholder.com/${gameState.tileSize/2}x${gameState.tileSize/2}/4444ff/000000?text=Ship2`);
-  
-  // Load token images
-  tokenBlue = loadImage(`https://via.placeholder.com/${gameState.tileSize/3}x${gameState.tileSize/3}/4444ff/ffffff?text=Move`);
-  tokenRed = loadImage(`https://via.placeholder.com/${gameState.tileSize/3}x${gameState.tileSize/3}/ff4444/ffffff?text=Used`);
-  
-  // Load background
-  backgroundImage = loadImage(`https://via.placeholder.com/${windowWidth}x${windowHeight}/1e3a8a/ffffff?text=NorthSea`);
-}
-
 function setup() {
   createCanvas(windowWidth, windowHeight);
   initializeTileTypes();
+  createGameAssets();
   initializeGame();
+  
+  // Add movement mode to gameState
+  gameState.movementMode = false;
   
   // Add instruction button
   let instructionsButton = createButton('Instructions');
@@ -60,44 +46,61 @@ function setup() {
   });
 }
 
-function draw() {
-  background(30, 58, 138); // North Sea blue
-  
-  // Draw game board
-  push();
-  translate(width/2, height/2);
-  drawBoard();
-  pop();
-  
-  // Draw player hands and UI
-  drawPlayerUI();
-  
-  // Draw dragged tile if any
-  if (gameState.draggedTile) {
-    push();
-    translate(mouseX, mouseY);
-    rotate(gameState.tileRotation * HALF_PI);
-    drawTile(gameState.draggedTile, -gameState.tileSize/2, -gameState.tileSize/2);
-    pop();
+function createGameAssets() {
+  // Create ship images
+  for (let i = 0; i < 2; i++) {
+    let shipImg = createGraphics(gameState.tileSize/2, gameState.tileSize/2);
+    shipImg.background(i === 0 ? "#ff4444" : "#4444ff");
+    shipImg.fill(0);
+    shipImg.stroke(255);
+    shipImg.strokeWeight(2);
+    shipImg.beginShape();
+    shipImg.vertex(shipImg.width/2, 5);
+    shipImg.vertex(shipImg.width-5, shipImg.height-10);
+    shipImg.vertex(shipImg.width/2, shipImg.height-5);
+    shipImg.vertex(5, shipImg.height-10);
+    shipImg.endShape(CLOSE);
+    shipImg.fill(255);
+    shipImg.noStroke();
+    shipImg.textSize(12);
+    shipImg.textAlign(CENTER, CENTER);
+    shipImg.text(`Ship ${i+1}`, shipImg.width/2, shipImg.height/2);
+    shipImages[i] = shipImg;
   }
   
-  // Draw message log
-  drawMessageLog();
+  // Create token images
+  tokenBlue = createGraphics(gameState.tileSize/3, gameState.tileSize/3);
+  tokenBlue.background("#4444ff");
+  tokenBlue.fill(255);
+  tokenBlue.noStroke();
+  tokenBlue.ellipse(tokenBlue.width/2, tokenBlue.height/2, tokenBlue.width-10, tokenBlue.height-10);
+  tokenBlue.fill(0);
+  tokenBlue.textSize(10);
+  tokenBlue.textAlign(CENTER, CENTER);
+  tokenBlue.text("Move", tokenBlue.width/2, tokenBlue.height/2);
   
-  // Draw game over state
-  if (gameState.gameOver) {
-    drawGameOver();
-  }
+  tokenRed = createGraphics(gameState.tileSize/3, gameState.tileSize/3);
+  tokenRed.background("#ff4444");
+  tokenRed.fill(255);
+  tokenRed.noStroke();
+  tokenRed.ellipse(tokenRed.width/2, tokenRed.height/2, tokenRed.width-10, tokenRed.height-10);
+  tokenRed.fill(0);
+  tokenRed.textSize(10);
+  tokenRed.textAlign(CENTER, CENTER);
+  tokenRed.text("Used", tokenRed.width/2, tokenRed.height/2);
   
-  // Draw instructions if shown
-  if (gameState.showInstructions) {
-    drawInstructions();
+  // Create background
+  backgroundImage = createGraphics(width, height);
+  backgroundImage.background(30, 58, 138);
+  for (let i = 0; i < 100; i++) {
+    backgroundImage.fill(255, 255, 255, random(20, 40));
+    backgroundImage.noStroke();
+    backgroundImage.ellipse(random(width), random(height), random(1, 3), random(1, 3));
   }
 }
 
 function initializeTileTypes() {
   // Create tile types based on the rules
-  // This is a simplified version - in a real implementation you would define each tile's edges
   
   // Format: { id, hasLighthouse, hasBeacon, isOpenOcean, hasPier, edges: [top, right, bottom, left] }
   // Edge: 0 = water, 1 = land
@@ -108,37 +111,102 @@ function initializeTileTypes() {
     hasLighthouse: true, 
     hasBeacon: false, 
     isOpenOcean: false, 
-    hasPier: false,
+    hasPier: true,
     edges: [0, 0, 0, 0],  // All water edges
     x: 0, 
     y: 0,
     rotation: 0
   };
   
-  // Generate 53 more tiles (simplified for this implementation)
-  // In a real implementation, you would define each tile's exact configuration
-  for (let i = 1; i <= 53; i++) {
-    let type = {
-      id: i,
-      hasLighthouse: Math.random() < 0.2,  // 20% chance for lighthouse
-      hasBeacon: !this.hasLighthouse && Math.random() < 0.3,  // 30% chance for beacon if not lighthouse
-      isOpenOcean: Math.random() < 0.4,  // 40% chance for open ocean
-      hasPier: Math.random() < 0.1,  // 10% chance for pier
-      edges: []
-    };
+  // Define all 54 tiles with specific configurations
+  let tileConfigs = [
+    // HQ tile (already defined above)
     
-    // Generate edges - in a real implementation, these would be hardcoded per tile
-    if (type.isOpenOcean) {
-      type.edges = [0, 0, 0, 0];  // All water for open ocean
-    } else {
-      // Random mix of land and water
-      for (let j = 0; j < 4; j++) {
-        type.edges.push(Math.random() < 0.4 ? 1 : 0);
-      }
-    }
+    // Open ocean tiles (all water edges)
+    { id: 1, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 2, hasLighthouse: false, hasBeacon: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 3, hasLighthouse: false, hasBeacon: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 4, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 5, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
     
-    gameState.tileTypes.push(type);
-  }
+    // One land edge
+    { id: 6, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
+    { id: 7, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
+    { id: 8, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 0, 0, 0] },
+    { id: 9, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
+    { id: 10, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
+    
+    // Two adjacent land edges
+    { id: 11, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
+    { id: 12, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
+    { id: 13, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 1, 0, 0] },
+    { id: 14, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
+    { id: 15, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
+    
+    // Two opposite land edges
+    { id: 16, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
+    { id: 17, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
+    { id: 18, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 0, 1, 0] },
+    { id: 19, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
+    { id: 20, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
+    
+    // Three land edges
+    { id: 21, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] },
+    { id: 22, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] },
+    { id: 23, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 1, 1, 0] },
+    { id: 24, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] },
+    { id: 25, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] },
+    
+    // All land edges
+    { id: 26, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 1] },
+    { id: 27, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 1] },
+    { id: 28, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 1] },
+    
+    // Mixed patterns
+    { id: 29, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
+    { id: 30, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
+    { id: 31, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
+    { id: 32, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [0, 1, 0, 1] },
+    
+    // More variations
+    { id: 33, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 34, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 35, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 36, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [0, 0, 1, 1] },
+    
+    // Additional variations
+    { id: 37, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
+    { id: 38, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
+    { id: 39, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
+    { id: 40, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [0, 1, 1, 0] },
+    
+    // More open ocean with features
+    { id: 41, hasLighthouse: true, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 42, hasLighthouse: true, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    
+    // More single land edge variations
+    { id: 43, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
+    { id: 44, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
+    { id: 45, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
+    
+    // More two adjacent land edge variations
+    { id: 46, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 47, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 48, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    
+    // Final variations
+    { id: 49, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [0, 1, 1, 1] },
+    { id: 50, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
+    { id: 51, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
+    { id: 52, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 0, 0, 1] },
+    { id: 53, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
+
+    // Add the missing 54th tile
+    { id: 54, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] }
+  ];
+  
+  // Add all tile types to the game state
+  gameState.tileTypes = [gameState.beaconHQ, ...tileConfigs];
 }
 
 function initializeGame() {
@@ -167,6 +235,40 @@ function initializeGame() {
   addMessage("Game started! Player 1's turn");
 }
 
+function draw() {
+  background(30, 58, 138); // North Sea blue
+  
+  // Draw game board
+  push();
+  translate(width/2, height/2);
+  drawBoard();
+  pop();
+  
+  // Draw player hands and UI
+  drawPlayerUI();
+  
+  // Draw dragged tile if any
+  if (gameState.draggedTile) {
+    push();
+    translate(mouseX, mouseY);
+    drawTile(gameState.draggedTile, -gameState.tileSize/2, -gameState.tileSize/2);
+    pop();
+  }
+  
+  // Draw message log
+  drawMessageLog();
+  
+  // Draw game over state
+  if (gameState.gameOver) {
+    drawGameOver();
+  }
+  
+  // Draw instructions if shown
+  if (gameState.showInstructions) {
+    drawInstructions();
+  }
+}
+
 function drawBoard() {
   // Calculate the grid bounds for what's visible
   let visibleWidth = Math.ceil(width / gameState.tileSize);
@@ -183,7 +285,6 @@ function drawBoard() {
     
     push();
     translate(screenX, screenY);
-    rotate(gameState.placedTiles[key].rotation * HALF_PI);
     drawTile(gameState.placedTiles[key], -gameState.tileSize/2, -gameState.tileSize/2);
     pop();
   }
@@ -208,48 +309,132 @@ function drawBoard() {
 
 function drawTile(tile, x, y) {
   // Draw base tile
-  let imgIndex = tile.id % tileImages.length;
-  image(tileImages[imgIndex], x, y, gameState.tileSize, gameState.tileSize);
+  let tileSize = gameState.tileSize;
   
-  // Draw special features
-  fill(0);
-  textAlign(CENTER, CENTER);
-  textSize(12);
-  
-  if (tile.hasLighthouse) {
-    fill(255, 0, 0);
-    ellipse(x + gameState.tileSize/2, y + gameState.tileSize/2, 20, 20);
-    fill(255);
-    text("LH", x + gameState.tileSize/2, y + gameState.tileSize/2);
-  } else if (tile.hasBeacon) {
-    fill(255, 165, 0);
-    ellipse(x + gameState.tileSize/2, y + gameState.tileSize/2, 15, 15);
-    fill(255);
-    text("B", x + gameState.tileSize/2, y + gameState.tileSize/2);
-  } else if (tile.hasPier) {
-    fill(139, 69, 19);
-    rect(x + gameState.tileSize/2 - 15, y + gameState.tileSize/2 - 5, 30, 10);
-    fill(255);
-    text("PIER", x + gameState.tileSize/2, y + gameState.tileSize/2);
+  // Base color based on type
+  if (tile.isOpenOcean) {
+    fill(65, 105, 225); // Deep blue for open ocean
+  } else {
+    fill(100, 145, 200); // Lighter blue for coastal waters
   }
   
-  // Draw edge types (water/land)
+  stroke(0);
+  strokeWeight(1);
+  rect(x, y, tileSize, tileSize);
+  
+  // Draw edges
+  let rotatedEdges = rotateEdges(tile.edges, tile.rotation || 0);
+  
+  // Draw water/land edges more distinctly
   for (let i = 0; i < 4; i++) {
     push();
-    translate(x + gameState.tileSize/2, y + gameState.tileSize/2);
+    translate(x + tileSize/2, y + tileSize/2);
     rotate(i * HALF_PI);
     
-    if (tile.edges[i] === 1) {
-      // Land
-      fill(240, 230, 140);
-      rect(-gameState.tileSize/2, -gameState.tileSize/2, gameState.tileSize/4, gameState.tileSize/10);
+    if (rotatedEdges[i] === 1) {
+      // Land - more distinct color and shape
+      fill(240, 230, 140); // Sand color
+      noStroke();
+      beginShape();
+      vertex(-tileSize/2, -tileSize/2);
+      vertex(tileSize/2, -tileSize/2);
+      vertex(tileSize/2, -tileSize/2 + tileSize/4);
+      vertex(-tileSize/2, -tileSize/2 + tileSize/4);
+      endShape(CLOSE);
+      
     } else {
-      // Water
-      fill(135, 206, 235, 150);
-      rect(-gameState.tileSize/2, -gameState.tileSize/2, gameState.tileSize/4, gameState.tileSize/10);
+      // Water - add a visual indicator
+      fill(65, 105, 225, 100); // Transparent blue
+      noStroke();
+      beginShape();
+      vertex(-tileSize/2, -tileSize/2);
+      vertex(tileSize/2, -tileSize/2);
+      vertex(tileSize/2, -tileSize/2 + tileSize/8);
+      vertex(-tileSize/2, -tileSize/2 + tileSize/8);
+      endShape(CLOSE);
+      
+      // Add wave texture
+      stroke(255, 255, 255, 100);
+      strokeWeight(1);
+      for (let j = 0; j < 3; j++) {
+        let y = -tileSize/2 + j * 5 + 2;
+        beginShape();
+        for (let x = -tileSize/2; x <= tileSize/2; x += 5) {
+          vertex(x, y + sin(x * 0.1) * 2);
+        }
+        endShape();
+      }
     }
     pop();
   }
+  
+  // Draw special features
+  push();
+  translate(x + tileSize/2, y + tileSize/2);
+  
+  if (tile.hasLighthouse) {
+    // Lighthouse
+    fill(255);
+    stroke(0);
+    strokeWeight(1);
+    rect(-10, -20, 20, 40);
+    
+    fill(255, 0, 0);
+    noStroke();
+    ellipse(0, -25, 15, 15);
+    
+    // Light beams
+    stroke(255, 255, 0, 150);
+    strokeWeight(2);
+    for (let angle = 0; angle < TWO_PI; angle += PI/8) {
+      let len = 30;
+      line(0, -25, cos(angle) * len, -25 + sin(angle) * len);
+    }
+  } else if (tile.hasBeacon) {
+    // Beacon buoy
+    fill(255, 165, 0);
+    stroke(0);
+    strokeWeight(1);
+    ellipse(0, 0, 20, 20);
+    
+    // Buoy pole
+    stroke(100);
+    strokeWeight(3);
+    line(0, -15, 0, 15);
+    
+    // Flashing light
+    fill(255, 255, 0);
+    noStroke();
+    ellipse(0, -15, 8, 8);
+  }
+  
+  if (tile.hasPier) {
+    // Pier
+    fill(139, 69, 19);
+    noStroke();
+    rect(-25, -5, 50, 10);
+    
+    // Pier posts
+    fill(101, 67, 33);
+    rect(-20, -5, 5, 10);
+    rect(0, -5, 5, 10);
+    rect(15, -5, 5, 10);
+  }
+  
+  // Draw tile ID and edge info for debugging
+  fill(0);
+  textSize(10);
+  textAlign(CENTER, CENTER);
+  text(`ID: ${tile.id}`, 0, tileSize/3);
+  
+  // Draw edge indicators
+  textSize(8);
+  text(`T:${rotatedEdges[0]}`, 0, -tileSize/3);
+  text(`R:${rotatedEdges[1]}`, tileSize/3, 0);
+  text(`B:${rotatedEdges[2]}`, 0, tileSize/3);
+  text(`L:${rotatedEdges[3]}`, -tileSize/3, 0);
+  
+  pop();
 }
 
 function drawPlayerUI() {
@@ -279,7 +464,6 @@ function drawPlayerUI() {
       
       push();
       translate(tileX + gameState.tileSize/2, handY + gameState.tileSize/2);
-      rotate(0); // No rotation in hand
       drawTile(player.tiles[j], -gameState.tileSize/2, -gameState.tileSize/2);
       pop();
     }
@@ -306,7 +490,7 @@ function drawActionButtons() {
   let buttonWidth = 150;
   let buttonHeight = 40;
   let buttonSpacing = buttonWidth + 20;
-  let startX = width - buttonWidth * 3 - 40;
+  let startX = width - buttonWidth * 3 - 60; // Added space for one more button
   
   // End Turn button
   fill(100, 100, 100);
@@ -321,11 +505,11 @@ function drawActionButtons() {
   fill(255);
   text("Swap Tile", startX + buttonSpacing + buttonWidth/2, buttonY + buttonHeight/2);
   
-  // Rotate Tile button
-  fill(100, 100, 100);
+  // Discard for Movement button
+  fill(gameState.discardMode ? color(200, 0, 0) : color(100, 100, 100));
   rect(startX + buttonSpacing * 2, buttonY, buttonWidth, buttonHeight, 5);
   fill(255);
-  text("Rotate Tile", startX + buttonSpacing * 2 + buttonWidth/2, buttonY + buttonHeight/2);
+  text("Discard to Move", startX + buttonSpacing * 2 + buttonWidth/2, buttonY + buttonHeight/2);
 }
 
 function drawMessageLog() {
@@ -391,13 +575,16 @@ function drawInstructions() {
     
     "On Your Turn:",
     "1. Place tiles from your hand (connected to your ship by water)",
-    "2. Move your ship using movement tokens (only across water)",
-    "3. Swap one tile with another player (once per turn)",
+    "2. When you place a tile, your ship automatically moves to it (free movement)",
+    "3. You can use movement tokens to move your ship to adjacent water tiles",
+    "4. You can discard tiles to move one space per discarded tile (no token used)",
+    "5. Swap one tile with another player (once per turn)",
+    "6. New tiles are drawn at the end of your turn",
     
     "Controls:",
     "- Drag tiles from your hand to place them",
-    "- Click the Rotate button to rotate a tile before placing",
-    "- Click your ship and then a valid adjacent tile to move",
+    "- Click your ship and then a valid adjacent tile to move (uses a token)",
+    "- Click 'Discard to Move' and select a tile to discard for movement",
     "- Click End Turn when finished"
   ];
   
@@ -433,11 +620,16 @@ function highlightValidPlacements() {
   
   // Check adjacent positions
   let directions = [
-    {dx: 0, dy: -1, edge: 2, opposite: 0}, // top
-    {dx: 1, dy: 0, edge: 3, opposite: 1},  // right
-    {dx: 0, dy: 1, edge: 0, opposite: 2},  // bottom
-    {dx: -1, dy: 0, edge: 1, opposite: 3}  // left
+    {dx: 0, dy: -1, edge: 0, opposite: 2}, // top
+    {dx: 1, dy: 0, edge: 1, opposite: 3},  // right
+    {dx: 0, dy: 1, edge: 2, opposite: 0},  // bottom
+    {dx: -1, dy: 0, edge: 3, opposite: 1}  // left
   ];
+  
+  // Get the current tile and its rotated edges
+  let currentTileKey = `${shipX},${shipY}`;
+  let currentTile = gameState.placedTiles[currentTileKey];
+  let rotatedEdges = rotateEdges(currentTile.edges, currentTile.rotation || 0);
   
   for (let dir of directions) {
     let newX = shipX + dir.dx;
@@ -447,11 +639,20 @@ function highlightValidPlacements() {
     // If position is vacant
     if (!gameState.placedTiles[key]) {
       // Check if current tile has water on the edge
-      let currentTileKey = `${shipX},${shipY}`;
-      let currentTile = gameState.placedTiles[currentTileKey];
-      
-      if (currentTile && currentTile.edges[dir.edge] === 0) { // If water edge
+      if (rotatedEdges[dir.edge] === 0) { // If water edge
         fill(0, 255, 0, 50);
+        rect(
+          newX * gameState.tileSize - gameState.tileSize/2, 
+          newY * gameState.tileSize - gameState.tileSize/2, 
+          gameState.tileSize, 
+          gameState.tileSize
+        );
+      }
+    } 
+    // If we're in movement mode, highlight valid move targets
+    else if (gameState.movementMode) {
+      if (isValidMoveTarget(newX, newY)) {
+        fill(0, 0, 255, 50);
         rect(
           newX * gameState.tileSize - gameState.tileSize/2, 
           newY * gameState.tileSize - gameState.tileSize/2, 
@@ -495,7 +696,7 @@ function mousePressed() {
   let buttonWidth = 150;
   let buttonHeight = 40;
   let buttonSpacing = buttonWidth + 20;
-  let startX = width - buttonWidth * 3 - 40;
+  let startX = width - buttonWidth * 3 - 60;
   
   // End Turn button
   if (mouseX >= startX && mouseX <= startX + buttonWidth &&
@@ -511,12 +712,50 @@ function mousePressed() {
     return;
   }
   
-  // Rotate Tile button
+  // Discard for Movement button
   if (mouseX >= startX + buttonSpacing * 2 && mouseX <= startX + buttonSpacing * 2 + buttonWidth &&
       mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
-    if (gameState.draggedTile) {
-      gameState.tileRotation = (gameState.tileRotation + 1) % 4;
+    toggleDiscardMode();
+    return;
+  }
+  
+  // Check if we're in movement mode and clicking on a valid move target
+  if (gameState.movementMode) {
+    // Convert mouse position to grid position relative to board center
+    let gridX = Math.floor((mouseX - width/2) / gameState.tileSize + 0.5);
+    let gridY = Math.floor((mouseY - height/2) / gameState.tileSize + 0.5);
+    
+    if (isValidMoveTarget(gridX, gridY)) {
+      moveShip(gridX, gridY);
+      gameState.movementMode = false;
+    } else {
+      // Cancel movement mode if clicking elsewhere
+      gameState.movementMode = false;
+      addMessage("Movement canceled");
     }
+    return;
+  }
+  
+  // Check if we're in discard mode and clicking on a player's tile
+  if (gameState.discardMode) {
+    let handY = height - 120;
+    let handSpacing = gameState.tileSize + 10;
+    let handX = 20 + gameState.currentPlayer * (width / 2);
+    
+    for (let i = 0; i < gameState.players[gameState.currentPlayer].tiles.length; i++) {
+      let tileX = handX + i * handSpacing;
+      
+      if (mouseX >= tileX && mouseX <= tileX + gameState.tileSize &&
+          mouseY >= handY && mouseY <= handY + gameState.tileSize) {
+        // Discard the tile and enter movement mode
+        discardTileForMovement(i);
+        return;
+      }
+    }
+    
+    // Cancel discard mode if clicking elsewhere
+    gameState.discardMode = false;
+    addMessage("Discard mode canceled");
     return;
   }
   
@@ -525,73 +764,133 @@ function mousePressed() {
     let handY = height - 120;
     let handSpacing = gameState.tileSize + 10;
     
-    for (let i = 0; i < gameState.players.length; i++) {
-      let handX = 20 + i * (width / 2);
+    // Current player's hand position
+    let currentPlayerHandX = 20 + gameState.currentPlayer * (width / 2);
+    
+    for (let i = 0; i < gameState.players[gameState.currentPlayer].tiles.length; i++) {
+      let tileX = currentPlayerHandX + i * handSpacing;
       
-      for (let j = 0; j < gameState.players[i].tiles.length; j++) {
-        let tileX = handX + j * handSpacing;
-        
-        if (mouseX >= tileX && mouseX <= tileX + gameState.tileSize &&
-            mouseY >= handY && mouseY <= handY + gameState.tileSize) {
-          
-          handleTileSwap(i, j);
+      if (mouseX >= tileX && mouseX <= tileX + gameState.tileSize &&
+          mouseY >= handY && mouseY <= handY + gameState.tileSize) {
+        // Select tile for swapping
+        gameState.swapTileIndex = i;
+        addMessage("Selected tile for swapping. Click another player's tile to swap.");
+        return;
+      }
+    }
+    
+    // Check if clicking on other player's tile
+    let otherPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+    let otherPlayerHandX = 20 + otherPlayer * (width / 2);
+    
+    for (let i = 0; i < gameState.players[otherPlayer].tiles.length; i++) {
+      let tileX = otherPlayerHandX + i * handSpacing;
+      
+      if (mouseX >= tileX && mouseX <= tileX + gameState.tileSize &&
+          mouseY >= handY && mouseY <= handY + gameState.tileSize) {
+        // Swap tiles
+        if (gameState.swapTileIndex !== -1) {
+          swapTiles(gameState.swapTileIndex, i);
           return;
         }
       }
     }
+    
+    // Cancel swap mode if clicking elsewhere
+    gameState.swapMode = false;
+    gameState.swapTileIndex = -1;
+    addMessage("Swap mode canceled");
+    return;
   }
   
-  // Check if we're clicking on current player's tile
+  // Check if clicking on player's ship to initiate movement
+  let player = gameState.players[gameState.currentPlayer];
+  let shipX = width/2 + player.ship.x * gameState.tileSize;
+  let shipY = height/2 + player.ship.y * gameState.tileSize;
+  
+  if (dist(mouseX, mouseY, shipX, shipY) < gameState.tileSize/2) {
+    if (player.movementTokens > 0) {
+      checkMoveTargets();
+    } else {
+      addMessage("No movement tokens left! You can discard tiles to move.");
+    }
+    return;
+  }
+  
+  // Check if clicking on a tile in player's hand to drag
   let handY = height - 120;
   let handSpacing = gameState.tileSize + 10;
   let handX = 20 + gameState.currentPlayer * (width / 2);
   
-  for (let j = 0; j < gameState.players[gameState.currentPlayer].tiles.length; j++) {
-    let tileX = handX + j * handSpacing;
+  for (let i = 0; i < player.tiles.length; i++) {
+    let tileX = handX + i * handSpacing;
     
     if (mouseX >= tileX && mouseX <= tileX + gameState.tileSize &&
         mouseY >= handY && mouseY <= handY + gameState.tileSize) {
-      
-      // Start dragging this tile
-      gameState.draggedTile = gameState.players[gameState.currentPlayer].tiles[j];
-      gameState.draggedTileIndex = j;
-      gameState.tileRotation = 0;
-      return;
-    }
-  }
-  
-  // Check if we're clicking on the current player's ship
-  let player = gameState.players[gameState.currentPlayer];
-  if (player.ship) {
-    let shipScreenX = width/2 + player.ship.x * gameState.tileSize;
-    let shipScreenY = height/2 + player.ship.y * gameState.tileSize;
-    
-    if (mouseX >= shipScreenX - gameState.tileSize/4 && 
-        mouseX <= shipScreenX + gameState.tileSize/4 &&
-        mouseY >= shipScreenY - gameState.tileSize/4 && 
-        mouseY <= shipScreenY + gameState.tileSize/4) {
-      
-      // Ship clicked, now check for valid move targets
-      checkMoveTargets();
+      // Start dragging tile
+      gameState.draggedTile = player.tiles[i];
+      gameState.draggedTileIndex = i;
+      console.log("Started dragging tile:", gameState.draggedTile.id);
       return;
     }
   }
 }
 
+function mouseDragged() {
+  // Only handle dragging if we have a dragged tile
+  if (gameState.draggedTile) {
+    // Just for visual feedback during dragging
+    console.log("Dragging tile:", gameState.draggedTile.id);
+    return false; // Prevent default behavior
+  }
+}
+
 function mouseReleased() {
+  console.log("Mouse released, draggedTile:", gameState.draggedTile ? gameState.draggedTile.id : "none");
+  
+  // If we were dragging a tile, try to place it
   if (gameState.draggedTile) {
     // Convert mouse position to grid position relative to board center
     let gridX = Math.floor((mouseX - width/2) / gameState.tileSize + 0.5);
     let gridY = Math.floor((mouseY - height/2) / gameState.tileSize + 0.5);
-    let key = `${gridX},${gridY}`;
     
-    // Check if this is a valid placement
+    console.log("Attempting to place at grid position:", gridX, gridY);
+    console.log("Valid placement:", isValidPlacement(gridX, gridY));
+    
+    // Check if valid placement
     if (isValidPlacement(gridX, gridY)) {
-      placeTile(gridX, gridY);
+      // Place the tile
+      let newTile = Object.assign({}, gameState.draggedTile);
+      newTile.rotation = 0; // No rotation
+      newTile.x = gridX;
+      newTile.y = gridY;
+      
+      gameState.placedTiles[`${gridX},${gridY}`] = newTile;
+      
+      // Remove from player's hand
+      gameState.players[gameState.currentPlayer].tiles.splice(gameState.draggedTileIndex, 1);
+      
+      // Required movement: Move ship to the newly placed tile
+      // This movement is free and doesn't use a movement token
+      let player = gameState.players[gameState.currentPlayer];
+      player.ship.x = gridX;
+      player.ship.y = gridY;
+      
+      addMessage(`Player ${gameState.currentPlayer + 1} placed a tile at (${gridX},${gridY}) and moved there`);
+      
+      // Check for game over condition
+      if (gameState.drawPile.length === 0 && 
+          gameState.players.every(p => p.tiles.length === 0)) {
+        endGame();
+      }
+    } else {
+      console.log("Invalid placement");
     }
     
+    // Reset dragged tile
     gameState.draggedTile = null;
     gameState.draggedTileIndex = -1;
+    return false; // Prevent default behavior
   }
 }
 
@@ -629,20 +928,23 @@ function isValidPlacement(x, y) {
   if (x === shipX && y === shipY + 1) direction = 2; // bottom
   if (x === shipX - 1 && y === shipY) direction = 3; // left
   
-  if (shipTile.edges[direction] !== 0) { // Not water
+  // Get rotated edges of the ship's tile
+  let shipRotatedEdges = rotateEdges(shipTile.edges, shipTile.rotation || 0);
+  
+  if (shipRotatedEdges[direction] !== 0) { // Not water
     return false;
   }
   
   // Check if dragged tile matches existing adjacent tiles
   let draggedTile = gameState.draggedTile;
-  let rotatedEdges = rotateEdges(draggedTile.edges, gameState.tileRotation);
+  let rotatedEdges = rotateEdges(draggedTile.edges, 0);
   
   // Check all four sides of the new position
   let directions = [
-    {dx: 0, dy: -1, edge: 2, opposite: 0}, // top
-    {dx: 1, dy: 0, edge: 3, opposite: 1},  // right
-    {dx: 0, dy: 1, edge: 0, opposite: 2},  // bottom
-    {dx: -1, dy: 0, edge: 1, opposite: 3}  // left
+    {dx: 0, dy: -1, edge: 0, opposite: 2}, // top
+    {dx: 1, dy: 0, edge: 1, opposite: 3},  // right
+    {dx: 0, dy: 1, edge: 2, opposite: 0},  // bottom
+    {dx: -1, dy: 0, edge: 3, opposite: 1}  // left
   ];
   
   for (let dir of directions) {
@@ -681,7 +983,7 @@ function placeTile(x, y) {
   let tile = Object.assign({}, gameState.draggedTile);
   
   // Apply rotation
-  tile.rotation = gameState.tileRotation;
+  tile.rotation = 0;
   
   // Add the tile to the board
   let key = `${x},${y}`;
@@ -712,23 +1014,24 @@ function checkMoveTargets() {
     return;
   }
   
+  // Set a flag to indicate we're in movement mode
+  gameState.movementMode = true;
+  
   // Highlight possible move targets
-  // This would be implemented in a real game
   addMessage("Click an adjacent water tile to move");
 }
 
 function moveShip(targetX, targetY) {
   let player = gameState.players[gameState.currentPlayer];
   
-  // Check if move is valid
-  // In a real implementation, you would verify water connection
-  
   // Move the ship
   player.ship.x = targetX;
   player.ship.y = targetY;
   
-  // Use a movement token
-  player.movementTokens--;
+  // Use a movement token only if not in discard mode
+  if (!gameState.discardMode && !gameState.movementMode) {
+    player.movementTokens--;
+  }
   
   addMessage(`Player ${gameState.currentPlayer + 1} moved to (${targetX},${targetY})`);
 }
@@ -762,7 +1065,7 @@ function handleTileSwap(playerIndex, tileIndex) {
   if (playerIndex !== currentPlayer) {
     // Swap tiles
     let temp = gameState.players[currentPlayer].tiles[gameState.swapTileIndex];
-gameState.players[currentPlayer].tiles[gameState.swapTileIndex] = gameState.players[playerIndex].tiles[tileIndex];
+    gameState.players[currentPlayer].tiles[gameState.swapTileIndex] = gameState.players[playerIndex].tiles[tileIndex];
     gameState.players[playerIndex].tiles[tileIndex] = temp;
     
     addMessage(`Player ${currentPlayer + 1} swapped a tile with Player ${playerIndex + 1}`);
@@ -776,27 +1079,39 @@ gameState.players[currentPlayer].tiles[gameState.swapTileIndex] = gameState.play
 }
 
 function endTurn() {
-  // Draw new tile if available
+  // Draw new tiles at the end of turn
   let player = gameState.players[gameState.currentPlayer];
-  if (gameState.drawPile.length > 0 && player.tiles.length < 3) {
+  
+  // Draw new tiles until player has 3 tiles or draw pile is empty
+  while (player.tiles.length < 3 && gameState.drawPile.length > 0) {
     let tileId = gameState.drawPile.pop();
-    player.tiles.push(Object.assign({}, gameState.tileTypes[tileId - 1]));
+    player.tiles.push(Object.assign({}, gameState.tileTypes[tileId]));
   }
-  
-  // Reset movement tokens
-  player.movementTokens = 3;
-  
-  // Check for surrounded tiles and update score
-  updateScore();
-  
-  // Switch to next player
-  gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
   
   // Reset swap mode
   gameState.swapMode = false;
   gameState.swapTileIndex = -1;
   
+  // Reset movement mode
+  gameState.movementMode = false;
+  
+  // Switch to next player
+  gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+  
+  // Reset movement tokens for the new player if it's a new round
+  if (gameState.currentPlayer === 0) {
+    for (let player of gameState.players) {
+      player.movementTokens = 3;
+    }
+  }
+  
   addMessage(`Player ${gameState.currentPlayer + 1}'s turn`);
+  
+  // Check for game over condition
+  if (gameState.drawPile.length === 0 && 
+      gameState.players.every(p => p.tiles.length === 0)) {
+    endGame();
+  }
 }
 
 function updateScore() {
@@ -869,4 +1184,90 @@ function shuffleArray(array) {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+}
+
+function isValidMoveTarget(x, y) {
+  let key = `${x},${y}`;
+  
+  // Check if the target position has a tile
+  if (!gameState.placedTiles[key]) {
+    return false;
+  }
+  
+  // Get the current player's ship position
+  let player = gameState.players[gameState.currentPlayer];
+  let shipX = player.ship.x;
+  let shipY = player.ship.y;
+  
+  // Check if the target is adjacent to the ship
+  let isAdjacent = (
+    (x === shipX && y === shipY - 1) || // top
+    (x === shipX + 1 && y === shipY) || // right
+    (x === shipX && y === shipY + 1) || // bottom
+    (x === shipX - 1 && y === shipY)    // left
+  );
+  
+  if (!isAdjacent) {
+    return false;
+  }
+  
+  // Check if the target tile has water (can move to water tiles)
+  let targetTile = gameState.placedTiles[key];
+  
+  // Get the direction from ship to target
+  let direction = -1;
+  if (x === shipX && y === shipY - 1) direction = 0; // top
+  if (x === shipX + 1 && y === shipY) direction = 1; // right
+  if (x === shipX && y === shipY + 1) direction = 2; // bottom
+  if (x === shipX - 1 && y === shipY) direction = 3; // left
+  
+  // Get the opposite direction (from target to ship)
+  let oppositeDirection = (direction + 2) % 4;
+  
+  // Get rotated edges of the target tile
+  let targetRotatedEdges = rotateEdges(targetTile.edges, targetTile.rotation || 0);
+  
+  // Check if the edge facing the ship is water (0)
+  return targetRotatedEdges[oppositeDirection] === 0;
+}
+
+function toggleDiscardMode() {
+  gameState.discardMode = !gameState.discardMode;
+  gameState.movementMode = false;
+  
+  if (gameState.discardMode) {
+    addMessage("Select a tile to discard for movement");
+  } else {
+    addMessage("Discard mode canceled");
+  }
+}
+
+function discardTileForMovement(tileIndex) {
+  // Remove the tile from player's hand and add to discard pile
+  let player = gameState.players[gameState.currentPlayer];
+  let discardedTile = player.tiles.splice(tileIndex, 1)[0];
+  gameState.discardPile.push(discardedTile.id);
+  
+  addMessage(`Player ${gameState.currentPlayer + 1} discarded a tile to move`);
+  
+  // Enter movement mode
+  gameState.discardMode = false;
+  gameState.movementMode = true;
+  addMessage("Click an adjacent water tile to move");
+}
+
+function swapTiles(playerTileIndex, otherPlayerIndex) {
+  let currentPlayer = gameState.currentPlayer;
+  let otherPlayer = (currentPlayer + 1) % gameState.players.length;
+  
+  // Swap the tiles
+  let temp = gameState.players[currentPlayer].tiles[playerTileIndex];
+  gameState.players[currentPlayer].tiles[playerTileIndex] = gameState.players[otherPlayer].tiles[otherPlayerIndex];
+  gameState.players[otherPlayer].tiles[otherPlayerIndex] = temp;
+  
+  addMessage(`Player ${currentPlayer + 1} swapped a tile with Player ${otherPlayer + 1}`);
+  
+  // Exit swap mode
+  gameState.swapMode = false;
+  gameState.swapTileIndex = -1;
 }
