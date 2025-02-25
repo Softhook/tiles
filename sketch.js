@@ -223,31 +223,39 @@ function initializeTileTypes() {
     { id: 44, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
    
     //right and bottom edge
-    { id: 45, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
-    { id: 46, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
-    { id: 47, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 45, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
+    { id: 46, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
+    { id: 47, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [0, 1, 1, 0] },
 
-    { id: 48, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
-    
-    // Final variations
-    { id: 49, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [0, 1, 1, 1] },
-    { id: 50, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
-    { id: 51, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
-    { id: 52, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 0, 0, 1] },
-    { id: 53, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
+    //bottom and left edge
+    { id: 48, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 49, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 50, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [0, 0, 1, 1] },
 
+//right and top edge
+    { id: 51, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
+    { id: 52, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
+    { id: 53, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 1, 0, 0] },
 
-    { id: 54, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
+//top and left edge
+    { id: 54, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
     { id: 55, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 56, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 57, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 58, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 59, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 60, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 61, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 62, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 63, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 64, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] }
+    { id: 56, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 0, 0, 1] },
+
+    //left top right
+    { id: 57, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 1] },
+    { id: 58, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 1] },
+
+    //right, bottom, left
+    { id: 59, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
+    { id: 60, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
+//top, bottom, left
+    { id: 61, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 1] },
+    { id: 62, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 1] },
+
+    //top, bottom, right
+    { id: 63, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] },
+    { id: 64, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] }
   ];
   
   // Add all tile types to the game state
