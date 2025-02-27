@@ -508,15 +508,19 @@ function drawTile(tile, x, y) {
     rotate(i * HALF_PI);
     
     if (rotatedEdges[i] === 1) {
-      // Land - more distinct color and shape with beach gradient
+      // Land - more organic shape with irregular coastline
       noStroke();
       // Darker sand at the back
-      fill(210, 180, 140);
+      fill(255, 200, 140);
       beginShape();
       vertex(-tileSize/2, -tileSize/2);
       vertex(tileSize/2, -tileSize/2);
-      vertex(tileSize/2, -tileSize/2 + tileSize/4);
-      vertex(-tileSize/2, -tileSize/2 + tileSize/4);
+      // Create irregular coastline that reaches the corner
+      bezierVertex(
+        tileSize/2, -tileSize/2 + tileSize/3,
+        -tileSize/3, -tileSize/2 + tileSize/3.5,
+        -tileSize/2, -tileSize/2
+      );
       endShape(CLOSE);
       
       // Lighter sand at the front
@@ -524,22 +528,19 @@ function drawTile(tile, x, y) {
       beginShape();
       vertex(-tileSize/2, -tileSize/2);
       vertex(tileSize/2, -tileSize/2);
-      vertex(tileSize/2, -tileSize/2 + tileSize/6);
-      vertex(-tileSize/2, -tileSize/2 + tileSize/6);
+      // Smaller irregular coastline that reaches the corner
+      bezierVertex(
+        tileSize/2, -tileSize/2 + tileSize/4,
+        -tileSize/3, -tileSize/2 + tileSize/4.5,
+        -tileSize/2, -tileSize/2
+      );
       endShape(CLOSE);
-      
+    } else if (!tile.isOpenOcean) {
+
+
     } else {
-      // Water - add wave texture
-      fill(65, 105, 225, 100);
-      noStroke();
-      beginShape();
-      vertex(-tileSize/2, -tileSize/2);
-      vertex(tileSize/2, -tileSize/2);
-      vertex(tileSize/2, -tileSize/2 + tileSize/8);
-      vertex(-tileSize/2, -tileSize/2 + tileSize/8);
-      endShape(CLOSE);
-      
-      // Animated waves
+   
+      // Animated waves only on open ocean tiles
       stroke(255, 255, 255, 150);
       strokeWeight(1);
       for (let j = 0; j < 3; j++) {
