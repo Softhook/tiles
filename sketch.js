@@ -175,11 +175,11 @@ function initializeTileTypes() {
     { id: 12, hasLighthouse: false, hasBeacon: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
     
 //windmill
-    { id: 13, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 14, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 15, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 16, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 17, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 13, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 14, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 15, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 16, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 17, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
 
    //bottom edge
     { id: 18, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
@@ -559,6 +559,7 @@ function drawTile(tile, x, y) {
   push();
   translate(x + tileSize/2, y + tileSize/2);
   
+  // Draw lighthouse and beacon first
   if (tile.hasLighthouse) {
     // Find the land edge to place the lighthouse
     let landEdgeIndex = rotatedEdges.indexOf(1);
@@ -663,16 +664,76 @@ function drawTile(tile, x, y) {
       if (tile.hasLighthouse) points += 2;
       if (tile.hasBeacon) points += 1;
       
-      // Draw points value
+      // Calculate windmill points
+      if (tile.hasWindmill) {
+        // Count adjacent open ocean tiles
+        let windmillBonus = 0;
+        let directions = [
+          {dx: 0, dy: -1},  // top
+          {dx: 1, dy: 0},   // right
+          {dx: 0, dy: 1},   // bottom
+          {dx: -1, dy: 0}   // left
+        ];
+        
+        for (let dir of directions) {
+          let adjX = tile.x + dir.dx;
+          let adjY = tile.y + dir.dy;
+          let adjKey = `${adjX},${adjY}`;
+          let adjTile = gameState.placedTiles[adjKey];
+          
+          if (adjTile && adjTile.isOpenOcean) {
+            windmillBonus += 1;
+          }
+        }
+        
+        points += windmillBonus;
+      }
+      
+      // Draw points value above everything else
       push();
       fill(255);
       stroke(0);
       strokeWeight(3);
       textSize(24);
       textAlign(CENTER, CENTER);
-      text(`${points}`, x + tileSize/2, y + tileSize/2);
+      text(`${points}`, 0, -20); // Moved up above the windmill
       pop();
     }
+  }
+  
+  // Draw windmill last
+  if (tile.hasWindmill) {
+    // Base of windmill
+    fill(150, 75, 0);
+    stroke(0);
+    strokeWeight(1);
+    rect(-8, -5, 16, 35);  // Tower
+    
+    // Windmill blades with rotation animation
+    push();
+    translate(0, 0);
+    rotate(frameCount * 0.02);  // Rotate blades
+    
+    fill(200);
+    stroke(0);
+    strokeWeight(1);
+    
+    // Draw four blades
+    for (let i = 0; i < 4; i++) {
+      push();
+      rotate(i * HALF_PI);
+      beginShape();
+      vertex(0, 0);
+      vertex(-5, -25);
+      vertex(5, -25);
+      endShape(CLOSE);
+      pop();
+    }
+    
+    // Center hub
+    fill(100);
+    ellipse(0, 0, 8, 8);
+    pop();
   }
   
   pop();
@@ -1694,6 +1755,31 @@ function calculateScore() {
       
       if (tile.hasBeacon) {
         score += 1;
+      }
+      
+      if (tile.hasWindmill) {
+        // Count adjacent open ocean tiles
+        let windmillBonus = 0;
+        let directions = [
+          {dx: 0, dy: -1},  // top
+          {dx: 1, dy: 0},   // right
+          {dx: 0, dy: 1},   // bottom
+          {dx: -1, dy: 0}   // left
+        ];
+        
+        for (let dir of directions) {
+          let adjX = x + dir.dx;
+          let adjY = y + dir.dy;
+          let adjKey = `${adjX},${adjY}`;
+          let adjTile = gameState.placedTiles[adjKey];
+          
+          if (adjTile && adjTile.isOpenOcean) {
+            windmillBonus += 1;
+          }
+        }
+        
+        // Add base point plus bonus for adjacent open ocean tiles
+        score += windmillBonus;
       }
     }
   }
