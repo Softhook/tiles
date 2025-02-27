@@ -7,7 +7,7 @@ let gameState = {
     { ship: null, tiles: [], movementTokens: 3, color: "#4444ff" }
   ],
   placedTiles: {},
-  tileSize: 60,
+  tileSize: 80,
   tileTypes: [],
   drawPile: [],
   discardPile: [],
@@ -576,24 +576,25 @@ function drawTile(tile, x, y) {
     }
   }
   
-  // Draw points value for explored tiles
-  let isExplored = isFullyExplored(tile.x, tile.y);
-  if (isExplored) {
-    // Calculate points for this tile
-    let points = 1; // Base point
-    if (tile.hasLighthouse) points += 2;
-    if (tile.hasBeacon) points += 1;
-    
-    // Draw points value
-    push();
-    translate(x + tileSize/2, y + tileSize/2);
-    fill(255);
-    stroke(0);
-    strokeWeight(3);
-    textSize(24);
-    textAlign(CENTER, CENTER);
-    text(`${points}`, 0, 0);
-    pop();
+  // Draw points value for explored tiles - only if the tile is placed on the board
+  if (tile.x !== undefined && tile.y !== undefined) {  // Only check for points on placed tiles
+    let isExplored = isFullyExplored(tile.x, tile.y);
+    if (isExplored) {
+      // Calculate points for this tile
+      let points = 1; // Base point
+      if (tile.hasLighthouse) points += 2;
+      if (tile.hasBeacon) points += 1;
+      
+      // Draw points value
+      push();
+      fill(255);
+      stroke(0);
+      strokeWeight(3);
+      textSize(24);
+      textAlign(CENTER, CENTER);
+      text(`${points}`, x + tileSize/2, y + tileSize/2);
+      pop();
+    }
   }
   
   pop();
