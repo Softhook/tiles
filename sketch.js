@@ -420,18 +420,20 @@ function drawBoard() {
       let shipX = player.ship.x * gameState.tileSize - shipImages[i].width/2;
       let shipY = player.ship.y * gameState.tileSize - shipImages[i].height/2;
       
-      // Draw active ship indicator
+      // Draw active ship indicator (only in 2-player mode)
       if (i === gameState.currentPlayer) {
         push();
         translate(player.ship.x * gameState.tileSize, player.ship.y * gameState.tileSize);
         
-        // Animated highlight circle
-        noFill();
-        stroke(255, 255, 0, 150 + sin(frameCount * 0.1) * 50);
-        strokeWeight(3);
-        ellipse(0, 0, gameState.tileSize * 0.9, gameState.tileSize * 0.9);
+        // Animated highlight circle (only in 2-player mode)
+        if (!gameState.soloMode) {
+          noFill();
+          stroke(255, 255, 0, 150 + sin(frameCount * 0.1) * 50);
+          strokeWeight(3);
+          ellipse(0, 0, gameState.tileSize * 0.9, gameState.tileSize * 0.9);
+        }
         
-        // Direction arrows if in movement mode
+        // Direction arrows if in movement mode (show in both modes)
         if (gameState.movementMode && i === gameState.currentPlayer) {
           let arrowSize = gameState.tileSize * 0.2;
           fill(255, 255, 0, 200);
@@ -990,7 +992,8 @@ function mousePressed() {
     let buttonY = height/2 + 100;
     if (mouseX >= buttonX && mouseX <= buttonX + 150 &&
         mouseY >= buttonY && mouseY <= buttonY + 50) {
-      initializeGame();
+      // Reset game state and return to intro screen
+      gameState.gameStarted = false;
       gameState.gameOver = false;
       return;
     }
