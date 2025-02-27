@@ -7,7 +7,7 @@ let gameState = {
     { ship: null, tiles: [], movementTokens: 3, color: "#4444ff" }
   ],
   placedTiles: {},
-  tileSize: 80,
+  tileSize: 60,
   tileTypes: [],
   drawPile: [],
   discardPile: [],
@@ -50,7 +50,7 @@ function setup() {
 function createGameAssets() {
   // Create ship images - making them larger
   for (let i = 0; i < 2; i++) {
-    let shipImg = createGraphics(gameState.tileSize*0.7, gameState.tileSize*0.7); // Bigger ships
+    let shipImg = createGraphics(gameState.tileSize*0.9, gameState.tileSize*0.9); // Bigger ships
     let playerColor = i === 0 ? "#ff4444" : "#4444ff";
     
     // Set background to transparent
@@ -91,18 +91,14 @@ function createGameAssets() {
     shipImg.ellipse(shipImg.width*0.5, shipImg.height*0.15, shipImg.width*0.1, shipImg.width*0.05);
     
     // Player number
-    shipImg.fill(255);
-    shipImg.stroke(0);
-    shipImg.strokeWeight(1);
-    shipImg.textSize(16);
-    shipImg.textAlign(CENTER, CENTER);
-    shipImg.text(`${i + 1}`, shipImg.width*0.5, shipImg.height*0.5);
+    //shipImg.fill(255);
+    //shipImg.stroke(0);
+    //shipImg.strokeWeight(1);
+    //shipImg.textSize(16);
+    //shipImg.textAlign(CENTER, CENTER);
+    //shipImg.text(`${i + 1}`, shipImg.width*0.5, shipImg.height*0.5);
     
-    // Water splash at the front
-    shipImg.noStroke();
-    shipImg.fill(255, 255, 255, 150);
-    shipImg.ellipse(shipImg.width*0.85, shipImg.height*0.6, shipImg.width*0.1, shipImg.height*0.05);
-    
+
     shipImages[i] = shipImg;
   }
   
@@ -498,11 +494,7 @@ function drawTile(tile, x, y) {
   if (tile.hasLighthouse) {
     // Find the land edge to place the lighthouse
     let landEdgeIndex = rotatedEdges.indexOf(1);
-    let lighthouseRotation = landEdgeIndex !== -1 ? landEdgeIndex * HALF_PI : 0;
-    
-    push();
-    rotate(lighthouseRotation);
-    
+
     // Base of lighthouse
     fill(200);
     stroke(0);
@@ -524,14 +516,6 @@ function drawTile(tile, x, y) {
     stroke(0);
     ellipse(0, -20, 20, 20);
     
-    // Light beams
-    stroke(255, 255, 0, 150);
-    strokeWeight(2);
-    for (let angle = -PI/4; angle <= PI/4; angle += PI/8) {
-      let len = 40;
-      line(0, -20, cos(angle) * len, -20 + sin(angle) * len);
-    }
-    pop();
     
   } else if (tile.hasBeacon) {
     // Buoy with more detail
@@ -552,21 +536,6 @@ function drawTile(tile, x, y) {
     strokeWeight(1);
     ellipse(0, 0, 10, 10);
     
-    // Blinking effect
-    if (frameCount % 30 < 15) {
-      noStroke();
-      fill(255, 255, 0, 150);
-      ellipse(0, 0, 20, 20);
-    }
-    
-    // Chain/rope
-    stroke(100);
-    strokeWeight(1);
-    for (let i = 0; i < 4; i++) {
-      let angle = PI/6 + i * PI/12;
-      line(cos(angle) * 12, sin(angle) * 12,
-           cos(angle) * 20, sin(angle) * 20);
-    }
   }
   
   if (tile.hasPier) {
@@ -607,13 +576,25 @@ function drawTile(tile, x, y) {
     }
   }
   
-  // Draw tile ID for debugging (commented out for production)
-  /*
-  fill(0);
-  textSize(10);
-  textAlign(CENTER, CENTER);
-  text(`ID: ${tile.id}`, 0, tileSize/3);
-  */
+  // Draw points value for explored tiles
+  let isExplored = isFullyExplored(tile.x, tile.y);
+  if (isExplored) {
+    // Calculate points for this tile
+    let points = 1; // Base point
+    if (tile.hasLighthouse) points += 2;
+    if (tile.hasBeacon) points += 1;
+    
+    // Draw points value
+    push();
+    translate(x + tileSize/2, y + tileSize/2);
+    fill(255);
+    stroke(0);
+    strokeWeight(3);
+    textSize(24);
+    textAlign(CENTER, CENTER);
+    text(`${points}`, 0, 0);
+    pop();
+  }
   
   pop();
 }
@@ -634,7 +615,7 @@ function drawPlayerUI() {
       fill(255);
       textAlign(LEFT, BOTTOM);
       textSize(16);
-      text("Your Turn", handX, handY - 15);
+      text(`Your Turn Player ${i + 1}`, handX, handY - 15);
     } else {
       fill(255);
       textAlign(LEFT, BOTTOM);
@@ -1597,14 +1578,39 @@ function calculateScore() {
       
       // Additional points for special features
       if (tile.hasLighthouse) {
-        score += 3;
+        score += 2;
       }
       
       if (tile.hasBeacon) {
-        score += 2;
+        score += 1;
       }
     }
   }
   
   return score;
+}
+
+function isFullyExplored(x, y) {
+  if (x === undefined || y === undefined) return false;
+  
+  // Check all four adjacent positions
+  let directions = [
+    {dx: 0, dy: -1}, // top
+    {dx: 1, dy: 0},  // right
+    {dx: 0, dy: 1},  // bottom
+    {dx: -1, dy: 0}  // left
+  ];
+  
+  for (let dir of directions) {
+    let adjX = x + dir.dx;
+    let adjY = y + dir.dy;
+    let adjKey = `${adjX},${adjY}`;
+    
+    // If any adjacent position is empty, the tile is not explored
+    if (!gameState.placedTiles[adjKey]) {
+      return false;
+    }
+  }
+  
+  return true;
 }
