@@ -139,7 +139,7 @@ function createGameAssets() {
 function initializeTileTypes() {
   // Create tile types based on the rules
   
-  // Format: { id, hasLighthouse, hasBeacon, isOpenOcean, hasPier, edges: [top, right, bottom, left] }
+  // Format: { id, hasLighthouse, hasBeacon, hasWindmill, isOpenOcean, hasPier, edges: [top, right, bottom, left] }
   // Edge: 0 = water, 1 = land
   
   // Create the Beacon HQ tile
@@ -147,6 +147,7 @@ function initializeTileTypes() {
     id: 0, 
     hasLighthouse: true, 
     hasBeacon: false, 
+    hasWindmill: false,
     isOpenOcean: true, 
     hasPier: false,
     edges: [0, 0, 0, 0],  // All water edges
@@ -157,102 +158,104 @@ function initializeTileTypes() {
   
   let tileConfigs = [
     // HQ tile (already defined above)
+    { id: 0, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
     
     // Open ocean tiles (all water edges)
-    { id: 1, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 2, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 3, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 4, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 5, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 6, hasLighthouse: false, hasBeacon: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 1, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 2, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 3, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 4, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 5, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 6, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
 
-//beacons
-    { id: 7, hasLighthouse: false, hasBeacon: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 8, hasLighthouse: false, hasBeacon: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 9, hasLighthouse: false, hasBeacon: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 10, hasLighthouse: false, hasBeacon: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 11, hasLighthouse: false, hasBeacon: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 12, hasLighthouse: false, hasBeacon: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    
-//windmill
+    // Beacons
+    { id: 7, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 8, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 9, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 10, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 11, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 12, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+
+    // Windmills
     { id: 13, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
     { id: 14, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
     { id: 15, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
     { id: 16, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
     { id: 17, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
 
-   //bottom edge
-    { id: 18, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
-    { id: 19, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
-    { id: 20, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
-    { id: 21, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
-    { id: 22, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
+    // Bottom edge
+    { id: 18, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
+    { id: 19, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
+    { id: 20, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
+    { id: 21, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
+    { id: 22, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
 
-    //top edge
-    { id: 23, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
-    { id: 24, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
-    { id: 25, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
-    { id: 26, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
-    { id: 27, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
-    
-    // right edge
-    { id: 28, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
-    { id: 29, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
-    { id: 30, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
-    { id: 31, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
-    { id: 32, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
+    // Top edge
+    { id: 23, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
+    { id: 24, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
+    { id: 25, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
+    { id: 26, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
+    { id: 27, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
 
-    //left edge
-    { id: 33, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
-    { id: 34, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
-    { id: 35, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
-    { id: 36, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
-    { id: 37, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
+    // Right edge
+    { id: 28, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
+    { id: 29, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
+    { id: 30, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
+    { id: 31, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
+    { id: 32, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
 
-    //top and bottom edge
-    { id: 38, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
-    { id: 39, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
-    { id: 40, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
+    // Left edge
+    { id: 33, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
+    { id: 34, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
+    { id: 35, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
+    { id: 36, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
+    { id: 37, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
 
-    //left and right edge
-    { id: 41, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
-    { id: 42, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
-    { id: 43, hasLighthouse: false, hasBeacon: true, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
-   
-    //right and bottom edge
-    { id: 44, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
-    { id: 45, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
-    { id: 46, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [0, 1, 1, 0] },
+    // Top and bottom edge
+    { id: 38, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
+    { id: 39, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
+    { id: 40, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
 
-    //bottom and left edge
-    { id: 47, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
-    { id: 48, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
-    { id: 49, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [0, 0, 1, 1] },
+    // Left and right edge
+    { id: 41, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
+    { id: 42, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
+    { id: 43, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
 
-//right and top edge
-    { id: 50, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
-    { id: 51, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
-    { id: 52, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 1, 0, 0] },
+    // Right and bottom edge
+    { id: 44, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
+    { id: 45, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
+    { id: 46, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, edges: [0, 1, 1, 0] },
 
-//top and left edge
-    { id: 53, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 54, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 55, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: true, edges: [1, 0, 0, 1] },
+    // Bottom and left edge
+    { id: 47, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 48, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
+    { id: 49, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, edges: [0, 0, 1, 1] },
 
-    //left top right
-    { id: 56, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 1] },
-    { id: 57, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 1] },
+    // Right and top edge
+    { id: 50, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
+    { id: 51, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
+    { id: 52, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, edges: [1, 1, 0, 0] },
 
-    //right, bottom, left
-    { id: 58, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
-    { id: 59, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
-//top, bottom, left
-    { id: 60, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 1] },
-    { id: 61, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 1] },
+    // Top and left edge
+    { id: 53, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
+    { id: 54, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
+    { id: 55, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, edges: [1, 0, 0, 1] },
 
-    //top, bottom, right
-    { id: 62, hasLighthouse: false, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] },
-    { id: 63, hasLighthouse: true, hasBeacon: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] }
+    // Left top right
+    { id: 56, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 1] },
+    { id: 57, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 1] },
+
+    // Right, bottom, left
+    { id: 58, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
+    { id: 59, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
+
+    // Top, bottom, left
+    { id: 60, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 1] },
+    { id: 61, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 1] },
+
+    // Top, bottom, right
+    { id: 62, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] },
+    { id: 63, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] }
   ];
   
   // Add all tile types to the game state
