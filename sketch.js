@@ -25,7 +25,8 @@ let gameState = {
   discardMode: false,
   gameStarted: false,
   soloMode: false,
-  selectingTileToKeep: false
+  selectingTileToKeep: false,
+  touchStartPos: null
 };
 
 // Initialize game assets
@@ -48,6 +49,25 @@ function setup() {
   instructionsButton.mousePressed(() => {
     gameState.showInstructions = !gameState.showInstructions;
   });
+  
+  // Add viewport meta tag for mobile devices
+  let meta = document.createElement('meta');
+  meta.setAttribute('name', 'viewport');
+  meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+  document.getElementsByTagName('head')[0].appendChild(meta);
+  
+  // Disable default touch behaviors
+  document.addEventListener('touchstart', function(e) {
+    if (e.target.nodeName !== 'INPUT' && e.target.nodeName !== 'TEXTAREA') {
+      e.preventDefault();
+    }
+  }, { passive: false });
+  
+  document.addEventListener('touchmove', function(e) {
+    if (e.target.nodeName !== 'INPUT' && e.target.nodeName !== 'TEXTAREA') {
+      e.preventDefault();
+    }
+  }, { passive: false });
 }
 
 function createGameAssets() {
@@ -1595,6 +1615,11 @@ function shuffleArray(array) {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+  
+  // Recalculate game scale based on new dimensions
+  // This ensures the game remains playable on orientation change
+  let minDimension = min(width, height);
+  gameState.tileSize = constrain(minDimension / 10, 40, 80);
 }
 
 function isValidMoveTarget(x, y) {
@@ -1805,4 +1830,54 @@ function isFullyExplored(x, y) {
   }
   
   return true;
+}
+
+// Add these functions to handle touch events
+
+function touchStarted() {
+  // Make sure we have touches before accessing them
+  if (touches.length === 0) return false;
+  
+  // Store the initial touch position
+  gameState.touchStartPos = { x: touches[0].x, y: touches[0].y };
+  
+  // Call mousePressed to handle the same logic
+  mousePressed();
+  
+  // Prevent default behavior
+  return false;
+}
+
+function touchMoved() {
+  // Make sure we have touches before accessing them
+  if (touches.length === 0) return false;
+  
+  // Only handle if we have a dragged tile
+  if (gameState.draggedTile) {
+    // Update mouseX and mouseY to match touch position
+    mouseX = touches[0].x;
+    mouseY = touches[0].y;
+    
+    // Call mouseDragged to use the same logic
+    mouseDragged();
+  }
+  
+  // Prevent default behavior (scrolling)
+  return false;
+}
+
+function touchEnded() {
+  // If we have a touch start position
+  if (gameState.touchStartPos) {
+    // If we were dragging a tile, handle the release
+    if (gameState.draggedTile) {
+      mouseReleased();
+    }
+    
+    // Reset touch state
+    gameState.touchStartPos = null;
+  }
+  
+  // Prevent default behavior
+  return false;
 }
