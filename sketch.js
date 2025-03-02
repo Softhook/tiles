@@ -93,38 +93,24 @@ function createGameAssets() {
     shipImg.fill(255, 255, 255, 150);
     shipImg.ellipse(shipImg.width*0.5, shipImg.height*0.15, shipImg.width*0.1, shipImg.width*0.05);
     
-    // Player number
-    //shipImg.fill(255);
-    //shipImg.stroke(0);
-    //shipImg.strokeWeight(1);
-    //shipImg.textSize(16);
-    //shipImg.textAlign(CENTER, CENTER);
-    //shipImg.text(`${i + 1}`, shipImg.width*0.5, shipImg.height*0.5);
-    
 
     shipImages[i] = shipImg;
   }
   
   // Create token images
-  tokenBlue = createGraphics(gameState.tileSize/3, gameState.tileSize/3);
-  tokenBlue.background("#4444ff");
-  tokenBlue.fill(255);
+  tokenBlue = createGraphics(gameState.tileSize/4, gameState.tileSize/4);
   tokenBlue.noStroke();
-  tokenBlue.ellipse(tokenBlue.width/2, tokenBlue.height/2, tokenBlue.width-10, tokenBlue.height-10);
-  tokenBlue.fill(0);
-  tokenBlue.textSize(10);
-  tokenBlue.textAlign(CENTER, CENTER);
-  tokenBlue.text("Move", tokenBlue.width/2, tokenBlue.height/2);
+  tokenBlue.fill(65, 105, 225); // Royal blue
+  tokenBlue.ellipse(tokenBlue.width/2, tokenBlue.height/2, tokenBlue.width, tokenBlue.height);
+  tokenBlue.fill(100, 149, 237, 150); // Cornflower blue highlight
+  tokenBlue.ellipse(tokenBlue.width/3, tokenBlue.height/3, tokenBlue.width/3, tokenBlue.height/3);
   
-  tokenRed = createGraphics(gameState.tileSize/3, gameState.tileSize/3);
-  tokenRed.background("#ff4444");
-  tokenRed.fill(255);
+  tokenRed = createGraphics(gameState.tileSize/4, gameState.tileSize/4);
   tokenRed.noStroke();
-  tokenRed.ellipse(tokenRed.width/2, tokenRed.height/2, tokenRed.width-10, tokenRed.height-10);
-  tokenRed.fill(0);
-  tokenRed.textSize(10);
-  tokenRed.textAlign(CENTER, CENTER);
-  tokenRed.text("Used", tokenRed.width/2, tokenRed.height/2);
+  tokenRed.fill(220, 20, 60); // Crimson red
+  tokenRed.ellipse(tokenRed.width/2, tokenRed.height/2, tokenRed.width, tokenRed.height);
+  tokenRed.fill(255, 69, 0, 150); // Red-orange highlight
+  tokenRed.ellipse(tokenRed.width/3, tokenRed.height/3, tokenRed.width/3, tokenRed.height/3);
   
   // Create background
   backgroundImage = createGraphics(width, height);
@@ -338,6 +324,9 @@ function draw() {
   
   // Draw player hands and UI
   drawPlayerUI();
+  
+  // Draw action buttons - add this line
+  drawActionButtons();
   
   // Draw dragged tile if any
   if (gameState.draggedTile) {
@@ -743,88 +732,82 @@ function drawTile(tile, x, y) {
 }
 
 function drawPlayerUI() {
-  let handY = height - 120;
-  let handSpacing = gameState.tileSize + 10;
-  
+    // Draw all players' hands, not just the current player
+    for (let playerIndex = 0; playerIndex < gameState.players.length; playerIndex++) {
+        let player = gameState.players[playerIndex];
+    
+    // Calculate the starting position for the player's hand
+    let startX = gameState.soloMode ? 
+            width/2 - (player.tiles.length * gameState.tileSize)/2 : // Center in solo mode
+            (playerIndex === 0 ? gameState.tileSize : width - gameState.tileSize * (player.tiles.length + 1)); // Sides in 2-player
+        
+        // Draw player background
+        noStroke();
+        // Highlight current player with more opacity
+        let bgOpacity = playerIndex === gameState.currentPlayer ? "44" : "22";
+        fill(color(player.color + bgOpacity));
+        rect(startX, height - gameState.tileSize * 1.5, player.tiles.length * gameState.tileSize, gameState.tileSize * 1.2, 10);
+        
+        // Only draw tokens for current player
+        if (playerIndex === gameState.currentPlayer) {
+        // Draw movement tokens directly above the player's tiles
+        let tokenY = height - gameState.tileSize * 2.2; // Position above tiles
+        
+            // Use fixed positions for token background in both modes
+            let tokenBgX;
   if (gameState.soloMode) {
-    // Center the hand for solo mode
-    let handX = width/2 - (handSpacing * 1.5); // Center 3 tiles
-    let player = gameState.players[0];
-    
-    // Draw tiles in hand
-    for (let j = 0; j < player.tiles.length; j++) {
-      let tileX = handX + j * handSpacing;
-      
-      push();
-      translate(tileX + gameState.tileSize/2, handY + gameState.tileSize/2);
-      drawTile(player.tiles[j], -gameState.tileSize/2, -gameState.tileSize/2);
-      pop();
-    }
-    
-    // Draw movement tokens
-    for (let j = 0; j < 4; j++) {
-      let tokenX = handX + j * 40;
-      let tokenY = handY + gameState.tileSize + 20;
-      
-      if (j < player.movementTokens) {
-        image(tokenBlue, tokenX, tokenY, 30, 30);
-      } else {
-        image(tokenRed, tokenX, tokenY, 30, 30);
-      }
-    }
+                tokenBgX = width/2 - gameState.tileSize * 2; // Fixed center position in solo mode
   } else {
-    for (let i = 0; i < gameState.players.length; i++) {
-      let player = gameState.players[i];
-      let handX = 20 + i * (width / 2);
-      
-      // Highlight current player's hand
-      if (i === gameState.currentPlayer) {
-        fill(255, 255, 255, 50);
-        rect(handX - 10, handY - 10, handSpacing * 3 + 20, gameState.tileSize + 20, 5);
-        
-        fill(255);
-        textAlign(LEFT, BOTTOM);
-        textSize(16);
-        text(`Your Turn Player ${i + 1}`, handX, handY - 15);
-      } else {
-        fill(255);
-        textAlign(LEFT, BOTTOM);
-        textSize(16);
-        text(`Player ${i + 1}`, handX, handY - 15);
-      }
-      
-      // Draw tiles in hand
-      for (let j = 0; j < player.tiles.length; j++) {
-        let tileX = handX + j * handSpacing;
-        
-        // If in swap mode, highlight the selected tile
-        if (gameState.swapMode && i === gameState.swapPlayerIndex && j === gameState.swapTileIndex) {
-          fill(255, 255, 0, 100);
-          rect(tileX - 5, handY - 5, gameState.tileSize + 10, gameState.tileSize + 10);
+                // Fixed positions for 2-player mode based on player index
+                tokenBgX = playerIndex === 0 ? 
+                    gameState.tileSize : // Left side for player 1
+                    width - gameState.tileSize * 5; // Right side for player 2
+            }
+            
+            // Draw token background
+            noStroke();
+            fill(0, 0, 0, 50);
+            rect(tokenBgX, tokenY - 10, gameState.tileSize * 4, gameState.tileSize/3 + 20, 10);
+            
+            // Draw movement tokens at fixed positions
+            let maxTokens = gameState.soloMode ? 4 : 3;
+            for (let i = 0; i < maxTokens; i++) {
+                let tokenX = tokenBgX + (i * gameState.tileSize/3) + gameState.tileSize/4;
+                if (i < player.movementTokens) {
+                    image(tokenBlue, tokenX, tokenY);
+                } else {
+                    image(tokenRed, tokenX, tokenY);
+                }
+            }
         }
         
-        push();
-        translate(tileX + gameState.tileSize/2, handY + gameState.tileSize/2);
-        drawTile(player.tiles[j], -gameState.tileSize/2, -gameState.tileSize/2);
-        pop();
-      }
-      
-      // Draw movement tokens
-      for (let j = 0; j < 3; j++) {
-        let tokenX = handX + j * 40;
-        let tokenY = handY + gameState.tileSize + 20;
-        
-        if (j < player.movementTokens) {
-          image(tokenBlue, tokenX, tokenY, 30, 30);
-        } else {
-          image(tokenRed, tokenX, tokenY, 30, 30);
+        // Draw player's tiles
+        for (let i = 0; i < player.tiles.length; i++) {
+            let tile = player.tiles[i];
+            let x = startX + i * gameState.tileSize;
+            let y = height - gameState.tileSize * 1.4;
+            
+            drawTile(tile, x, y);
+            
+            // Highlight the tile if it's being swapped
+            if (gameState.swapMode && gameState.swapTileIndex === i && gameState.swapPlayerIndex === playerIndex) {
+                stroke(255, 255, 0);
+                strokeWeight(3);
+                noFill();
+                rect(x, y, gameState.tileSize, gameState.tileSize);
+            }
         }
-      }
     }
-  }
-  
-  // Draw action buttons for current player
-  drawActionButtons();
+    
+    // Draw ships for all players
+    for (let i = 0; i < gameState.players.length; i++) {
+        let player = gameState.players[i];
+        if (player.ship) {
+            let shipX = player.ship.x * gameState.tileSize - shipImages[i].width/2;
+            let shipY = player.ship.y * gameState.tileSize - shipImages[i].height/2;
+            image(shipImages[i], shipX, shipY);
+        }
+    }
 }
 
 function drawActionButtons() {
@@ -973,6 +956,9 @@ function highlightValidPlacements() {
   // Get the current tile and its rotated edges
   let currentTileKey = `${shipX},${shipY}`;
   let currentTile = gameState.placedTiles[currentTileKey];
+  
+  if (!currentTile) return; // Safety check
+  
   let rotatedEdges = rotateEdges(currentTile.edges, currentTile.rotation || 0);
   
   for (let dir of directions) {
@@ -984,6 +970,7 @@ function highlightValidPlacements() {
     if (!gameState.placedTiles[key]) {
       // Check if current tile has water on the edge
       if (rotatedEdges[dir.edge] === 0) { // If water edge
+        noStroke();
         fill(0, 255, 0, 50);
         rect(
           newX * gameState.tileSize - gameState.tileSize/2, 
@@ -996,6 +983,7 @@ function highlightValidPlacements() {
     // If we're in movement mode, highlight valid move targets
     else if (gameState.movementMode) {
       if (isValidMoveTarget(newX, newY)) {
+        noStroke();
         fill(0, 0, 255, 50);
         rect(
           newX * gameState.tileSize - gameState.tileSize/2, 
@@ -1127,19 +1115,19 @@ function mousePressed() {
   }
   
   // Check if clicking on a tile in player's hand
-  let handY = height - 120;
-  let handSpacing = gameState.tileSize + 10;
-  let handX = gameState.soloMode ? 
-    width/2 - (handSpacing * 1.5) : // Center for solo mode
-    20 + gameState.currentPlayer * (width / 2); // Original 2-player position
-  
   let currentPlayer = gameState.players[gameState.currentPlayer];
   
+  // Calculate the starting position for the player's hand - match the same calculation from drawPlayerUI
+  let handStartX = gameState.soloMode ? 
+      width/2 - (currentPlayer.tiles.length * gameState.tileSize)/2 : // Center in solo mode
+      (gameState.currentPlayer === 0 ? gameState.tileSize : width - gameState.tileSize * (currentPlayer.tiles.length + 1)); // Sides in 2-player
+  
   for (let i = 0; i < currentPlayer.tiles.length; i++) {
-    let tileX = handX + i * handSpacing;
+    let x = handStartX + i * gameState.tileSize;
+    let y = height - gameState.tileSize * 1.4;
     
-    if (mouseX >= tileX && mouseX <= tileX + gameState.tileSize &&
-        mouseY >= handY && mouseY <= handY + gameState.tileSize) {
+    if (mouseX >= x && mouseX <= x + gameState.tileSize &&
+        mouseY >= y && mouseY <= y + gameState.tileSize) {
       
       // Handle different tile selection modes
       if (gameState.selectingTileToKeep) {
@@ -1181,15 +1169,19 @@ function mousePressed() {
   }
   
   // If in swap mode, check for clicks on other player's tiles
-  if (gameState.swapMode && gameState.swapTileIndex !== -1) {
+  if (gameState.swapMode && gameState.swapTileIndex !== -1 && !gameState.soloMode) {
     let otherPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
-    let otherHandX = 20 + otherPlayer * (width / 2);
+    let otherPlayerObj = gameState.players[otherPlayer];
     
-    for (let i = 0; i < gameState.players[otherPlayer].tiles.length; i++) {
-      let tileX = otherHandX + i * handSpacing;
+    // Calculate the other player's hand position using the same logic as drawPlayerUI
+    let otherHandStartX = (otherPlayer === 0 ? gameState.tileSize : width - gameState.tileSize * (otherPlayerObj.tiles.length + 1));
+    
+    for (let i = 0; i < otherPlayerObj.tiles.length; i++) {
+      let x = otherHandStartX + i * gameState.tileSize;
+      let y = height - gameState.tileSize * 1.4;
       
-      if (mouseX >= tileX && mouseX <= tileX + gameState.tileSize &&
-          mouseY >= handY && mouseY <= handY + gameState.tileSize) {
+      if (mouseX >= x && mouseX <= x + gameState.tileSize &&
+          mouseY >= y && mouseY <= y + gameState.tileSize) {
         swapTiles(gameState.swapTileIndex, i);
         return;
       }
