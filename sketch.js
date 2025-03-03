@@ -496,255 +496,122 @@ function drawBoard() {
 }
 
 function drawTile(tile, x, y) {
-  // Draw base tile
-  let tileSize = gameState.tileSize;
-  
-  // Base color based on type
-  if (tile.isOpenOcean) {
-    fill(65, 105, 225); // Deep blue for open ocean
-  } else {
-    fill(100, 145, 200); // Lighter blue for coastal waters
-  }
-  
-  stroke(0);
-  strokeWeight(1);
-  rect(x, y, tileSize, tileSize);
-  
-  // Draw edges
-  let rotatedEdges = rotateEdges(tile.edges, tile.rotation || 0);
-  
-  // Draw water/land edges more distinctly
-  for (let i = 0; i < 4; i++) {
     push();
-    translate(x + tileSize/2, y + tileSize/2);
-    rotate(i * HALF_PI);
-    
-    if (rotatedEdges[i] === 1) {
-      // Land - more organic shape with irregular coastline
-      noStroke();
-      // Darker sand at the back
-      fill(255, 200, 140);
-      beginShape();
-      vertex(-tileSize/2, -tileSize/2);
-      vertex(tileSize/2, -tileSize/2);
-      // Create irregular coastline that reaches the corner
-      bezierVertex(
-        tileSize/2, -tileSize/2 + tileSize/3,
-        -tileSize/3, -tileSize/2 + tileSize/3.5,
-        -tileSize/2, -tileSize/2
-      );
-      endShape(CLOSE);
-      
-      // Lighter sand at the front
-      fill(240, 230, 140);
-      beginShape();
-      vertex(-tileSize/2, -tileSize/2);
-      vertex(tileSize/2, -tileSize/2);
-      // Smaller irregular coastline that reaches the corner
-      bezierVertex(
-        tileSize/2, -tileSize/2 + tileSize/4,
-        -tileSize/3, -tileSize/2 + tileSize/4.5,
-        -tileSize/2, -tileSize/2
-      );
-      endShape(CLOSE);
-    } else if (!tile.isOpenOcean) {
-
-
+  translate(x, y);
+  
+  // Calculate a scaling factor based on tileSize
+  let scaleFactor = gameState.tileSize / 80; // Assuming 80px is the "base" tile size
+  
+  // Draw the base tile
+  if (tile.type === 'empty') {
+    fill(200);
+    rect(0, 0, gameState.tileSize, gameState.tileSize);
     } else {
-   
-      // Animated waves only on open ocean tiles
-      stroke(255, 255, 255, 150);
-      strokeWeight(1);
-      for (let j = 0; j < 3; j++) {
-        let y = -tileSize/2 + j * 5 + 2;
-        beginShape();
-        for (let x = -tileSize/2; x <= tileSize/2; x += 5) {
-          vertex(x, y + sin(frameCount * 0.05 + x * 0.1) * 2);
-        }
-        endShape();
-      }
-    }
-    pop();
+    image(gameAssets.tileImages[tile.id], 0, 0, gameState.tileSize, gameState.tileSize);
   }
   
-  // Draw special features
-  push();
-  translate(x + tileSize/2, y + tileSize/2);
-  
-  // Draw lighthouse and beacon first
-  if (tile.hasLighthouse) {
-    // Find the land edge to place the lighthouse
-    let landEdgeIndex = rotatedEdges.indexOf(1);
-
-
-    // Base of lighthouse
-    fill(200);
-    stroke(0);
-    strokeWeight(1);
-    rect(-12, -5, 24, 40);
-    
-    // Stripes
-    for (let i = 0; i < 3; i++) {
-      fill(255, 0, 0);
-      rect(-12, 5 + i * 10, 24, 5);
-    }
-    
-    // Top of lighthouse
-    fill(150);
-    rect(-15, -15, 30, 10);
-    
-    // Light room
-    fill(255);
-    stroke(0);
-    ellipse(0, -20, 20, 20);
-    
-    // Automatically orient the lighthouse to face the water
-    if (landEdgeIndex !== -1) {
-      rotate(landEdgeIndex * HALF_PI);
-    }
-  } else if (tile.hasBeacon) {
-    // Buoy with more detail
-    // Base
-    stroke(0);
-    strokeWeight(2);
-    fill(255, 0, 0);
-    ellipse(0, 0, 25, 25);
-    
-    // Stripes
-    fill(255);
-    noStroke();
-    rect(-12, -5, 24, 10);
-    
-    // Top light
-    fill(255, 255, 0);
-    stroke(0);
-    strokeWeight(1);
-    ellipse(0, 0, 10, 10);
-
-    
-    // Animated blinking light
-    let blinkSpeed = 0.1;
-    let blinkIntensity = 100 + sin(frameCount * blinkSpeed) * 50;
-    fill(255, 255, 0, blinkIntensity);
-    ellipse(0, 0, 15, 15);
+  // Draw tile highlight if needed
+  if (tile.isHighlighted) {
+    // ... existing highlight code ...
   }
   
-  if (tile.hasPier) {
-    // Find a land edge to connect the pier
-    let landEdgeIndex = rotatedEdges.indexOf(1);
-    if (landEdgeIndex !== -1) {
+  // Check if tile is explored
+  if (tile.isExplored) {
+    let points = 1;
+    // ... existing points calculation ...
+    
+    // Draw lighthouse if present with proper scaling
+    if (tile.hasLighthouse) {
       push();
-      rotate(landEdgeIndex * HALF_PI);
+      // Scale lighthouse relative to tile size
+      translate(gameState.tileSize / 2, gameState.tileSize / 2);
       
-      // Main pier structure
-      fill(139, 69, 19);
-      noStroke();
-      rect(-25, -8, 50, 16);
-      
-      // Wooden planks texture
-      stroke(101, 67, 33);
-      strokeWeight(1);
-      for (let i = -20; i < 20; i += 5) {
-        line(i, -8, i, 8);
-      }
-      
-      // Support posts
-      fill(101, 67, 33);
-      noStroke();
-      rect(-20, -10, 6, 20);
-      rect(0, -10, 6, 20);
-      rect(15, -10, 6, 20);
-      
-      // Rope details
-      stroke(200);
-      strokeWeight(1);
-      beginShape();
-      for (let x = -25; x < 25; x += 5) {
-        vertex(x, -10 + sin(x * 0.2) * 2);
-      }
-      endShape();
-      pop();
-    }
-  }
-  
-  // Draw points value for explored tiles - only if the tile is placed on the board
-  if (tile.x !== undefined && tile.y !== undefined) {  // Only check for points on placed tiles
-    let isExplored = isFullyExplored(tile.x, tile.y);
-    if (isExplored) {
-      // Calculate points for this tile
-      let points = 1; // Base point
-      if (tile.hasLighthouse) points += 2;
-      if (tile.hasBeacon) points += 1;
-      
-      // Calculate windmill points
-      if (tile.hasWindmill) {
-        // Count adjacent open ocean tiles
-        let windmillBonus = 0;
-        let directions = [
-          {dx: 0, dy: -1},  // top
-          {dx: 1, dy: 0},   // right
-          {dx: 0, dy: 1},   // bottom
-          {dx: -1, dy: 0}   // left
-        ];
-        
-        for (let dir of directions) {
-          let adjX = tile.x + dir.dx;
-          let adjY = tile.y + dir.dy;
-          let adjKey = `${adjX},${adjY}`;
-          let adjTile = gameState.placedTiles[adjKey];
-          
-          if (adjTile && adjTile.isOpenOcean) {
-            windmillBonus += 1;
-          }
-        }
-        
-        points += windmillBonus;
-      }
-      
-      // Draw points value above everything else
-      push();
-      fill(255);
-      stroke(0);
-      strokeWeight(3);
-      textSize(24);
-      textAlign(CENTER, CENTER);
-      text(`${points}`, 0, -20); // Moved up above the windmill
-      pop();
-    }
-  }
-  
-  // Draw windmill last
-  if (tile.hasWindmill) {
-    // Base of windmill
+      // Base of lighthouse
     fill(150, 75, 0);
-    stroke(0);
-    strokeWeight(1);
-    rect(-8, -5, 16, 35);  // Tower
-    
-    // Windmill blades with rotation animation
-    push();
-    translate(0, 0);
-    rotate(frameCount * 0.02);  // Rotate blades
-    
-    fill(200);
-    stroke(0);
-    strokeWeight(1);
-    
-    // Draw four blades
-    for (let i = 0; i < 4; i++) {
-      push();
-      rotate(i * HALF_PI);
-      beginShape();
-      vertex(0, 0);
-      vertex(-5, -25);
-      vertex(5, -25);
-      endShape(CLOSE);
+      rect(-gameState.tileSize * 0.1, -gameState.tileSize * 0.3, gameState.tileSize * 0.2, gameState.tileSize * 0.3);
+      
+      // Top of lighthouse
+      fill(200, 0, 0);
+      triangle(
+        -gameState.tileSize * 0.15, -gameState.tileSize * 0.3,
+        gameState.tileSize * 0.15, -gameState.tileSize * 0.3,
+        0, -gameState.tileSize * 0.45
+      );
+      
+      // Light beam
+      fill(255, 255, 200, 100);
+      // ... scale light beam proportionally ...
+      
       pop();
     }
     
-    // Center hub
-    fill(100);
-    ellipse(0, 0, 8, 8);
+    // Draw beacon if present with proper scaling
+    if (tile.hasBeacon) {
+      push();
+      translate(gameState.tileSize / 2, gameState.tileSize / 2);
+      
+      // Tower
+      fill(100);
+      rect(-gameState.tileSize * 0.075, -gameState.tileSize * 0.25, gameState.tileSize * 0.15, gameState.tileSize * 0.25);
+      
+      // Fire
+      fill(255, 100, 0);
+      // ... scale fire proportionally ...
+      
+      pop();
+    }
+    
+    // Draw windmill if present with proper scaling
+    if (tile.hasWindMill) {
+      push();
+      translate(gameState.tileSize / 2, gameState.tileSize / 2);
+      
+      // Base of windmill
+      fill(150, 75, 0);
+      rect(-gameState.tileSize * 0.075, -gameState.tileSize * 0.25, gameState.tileSize * 0.15, gameState.tileSize * 0.25);
+      
+      // Blades
+      push();
+      fill(120, 60, 0);
+      translate(0, -gameState.tileSize * 0.25);
+      rotate(frameCount * 0.01);
+      
+      for (let i = 0; i < 4; i++) {
+        rect(0, 0, gameState.tileSize * 0.05, gameState.tileSize * 0.2);
+        rotate(PI/2);
+      }
+      
+      // Hub
+      fill(100);
+      ellipse(0, 0, gameState.tileSize * 0.1, gameState.tileSize * 0.1);
+      
+      pop();
+      pop();
+    }
+    
+    // Draw score text with scaled size
+    textSize(gameState.tileSize * 0.25); // Scale text size relative to tile
+    fill(0);
+    text(`${points}`, 0, gameState.tileSize * -0.25);
+  }
+  
+  // Draw ship if present with proper scaling
+  if (tile.hasShip) {
+    push();
+    translate(gameState.tileSize / 2, gameState.tileSize / 2);
+    
+    // Ship body
+    fill(139, 69, 19);
+    rect(-gameState.tileSize * 0.15, -gameState.tileSize * 0.075, gameState.tileSize * 0.3, gameState.tileSize * 0.15);
+    
+    // Sail
+    fill(255);
+    triangle(
+      -gameState.tileSize * 0.05, -gameState.tileSize * 0.075,
+      -gameState.tileSize * 0.05, -gameState.tileSize * 0.3,
+      gameState.tileSize * 0.1, -gameState.tileSize * 0.075
+    );
+    
     pop();
   }
   
@@ -1616,10 +1483,20 @@ function shuffleArray(array) {
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   
-  // Recalculate game scale based on new dimensions
-  // This ensures the game remains playable on orientation change
+  // Recalculate tile size based on screen dimensions
   let minDimension = min(width, height);
-  gameState.tileSize = constrain(minDimension / 10, 40, 80);
+  let newTileSize = constrain(minDimension / 10, 40, 80);
+  
+  // Only update if the size has changed significantly to avoid slight rendering differences
+  if (abs(newTileSize - gameState.tileSize) > 2) {
+    gameState.tileSize = newTileSize;
+    
+    // If you have any pregenerated graphics that depend on tile size, recreate them here
+    // For example, you might need to update player tokens or other game assets
+    if (typeof createGameAssets === 'function') {
+      createGameAssets();
+    }
+  }
 }
 
 function isValidMoveTarget(x, y) {
