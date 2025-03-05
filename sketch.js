@@ -814,16 +814,6 @@ function drawPlayerUI() {
             }
         }
     }
-    
-    // Draw ships for all players
-    for (let i = 0; i < gameState.players.length; i++) {
-        let player = gameState.players[i];
-        if (player.ship) {
-            let shipX = player.ship.x * gameState.tileSize - shipImages[i].width/2;
-            let shipY = player.ship.y * gameState.tileSize - shipImages[i].height/2;
-            image(shipImages[i], shipX, shipY);
-        }
-    }
 }
 
 function drawActionButtons() {
