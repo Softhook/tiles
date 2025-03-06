@@ -357,7 +357,7 @@ function draw() {
   updateAnimations();
   
   // Clear background
-  background(30, 58, 138);
+  background(30, 58, 138); // North Sea blue
   
   // Draw game board with camera offset
   push();
@@ -366,7 +366,7 @@ function draw() {
   drawBoard();
   pop();
   
-  // Draw UI elements
+  // Draw UI elements (these stay fixed on screen)
   drawPlayerUI();
   drawActionButtons();
   
@@ -378,22 +378,22 @@ function draw() {
     pop();
   }
   
-  // Only show message log on desktop
-  if (!isMobileDevice()) {
-    drawMessageLog();
-  }
+  // Draw message log
+  drawMessageLog();
   
   // Draw tiles left counter and current score
   fill(255);
   textAlign(RIGHT, TOP);
-  textSize(isMobileDevice() ? 14 : 18);
-  text(`Tiles: ${gameState.drawPile.length}`, width - 20, 20);
-  text(`Score: ${calculateScore()}`, width - 20, isMobileDevice() ? 40 : 20);
+  textSize(18);
+  text(`Tiles left: ${gameState.drawPile.length}`, width - 20, 20);
+  text(`Current Score: ${calculateScore()}`, width - 150, 20);
   
+  // Draw game over state
   if (gameState.gameOver) {
     drawGameOver();
   }
   
+  // Draw instructions if shown
   if (gameState.showInstructions) {
     drawInstructions();
   }
@@ -844,62 +844,31 @@ function drawPlayerUI() {
 }
 
 function drawActionButtons() {
-  let buttonHeight = isMobileDevice() ? 50 : 40; // Taller buttons on mobile
-  let buttonSpacing = 10;
+  let buttonY = 50;
+  let buttonWidth = 150;
+  let buttonHeight = 40;
+  let buttonSpacing = buttonWidth + 20;
+  let startX = width - buttonWidth * 3 - 60;
   
-  // On mobile, stack buttons vertically on the right side
-  if (isMobileDevice()) {
-    let buttonWidth = min(150, width * 0.3); // Responsive button width
-    let startY = height * 0.1; // Start buttons 10% from top
-    
-    // End Turn button
-    fill(100, 100, 100);
-    rect(width - buttonWidth - 10, startY, buttonWidth, buttonHeight, 5);
+  // End Turn button
+  fill(100, 100, 100);
+  rect(startX, buttonY, buttonWidth, buttonHeight, 5);
+  fill(255);
+  textAlign(CENTER, CENTER);
+  text("End Turn", startX + buttonWidth/2, buttonY + buttonHeight/2);
+  
+  // Show Discard for Movement button in both modes
+  fill(gameState.discardMode ? color(200, 0, 0) : color(100, 100, 100));
+  rect(startX + buttonSpacing * 2, buttonY, buttonWidth, buttonHeight, 5);
+  fill(255);
+  text("Discard to Move", startX + buttonSpacing * 2 + buttonWidth/2, buttonY + buttonHeight/2);
+  
+  // Only show Swap Tile button in 2-player mode
+  if (!gameState.soloMode) {
+    fill(gameState.swapMode ? color(200, 200, 0) : color(100, 100, 100));
+    rect(startX + buttonSpacing, buttonY, buttonWidth, buttonHeight, 5);
     fill(255);
-    textAlign(CENTER, CENTER);
-    textSize(min(16, buttonWidth * 0.15)); // Responsive text size
-    text("End Turn", width - buttonWidth/2 - 10, startY + buttonHeight/2);
-    
-    // Discard to Move button
-    fill(gameState.discardMode ? color(200, 0, 0) : color(100, 100, 100));
-    rect(width - buttonWidth - 10, startY + buttonHeight + buttonSpacing, buttonWidth, buttonHeight, 5);
-    fill(255);
-    text("Discard", width - buttonWidth/2 - 10, startY + buttonHeight + buttonSpacing + buttonHeight/2);
-    
-    // Only show Swap button in 2-player mode
-    if (!gameState.soloMode) {
-      fill(gameState.swapMode ? color(200, 200, 0) : color(100, 100, 100));
-      rect(width - buttonWidth - 10, startY + (buttonHeight + buttonSpacing) * 2, buttonWidth, buttonHeight, 5);
-      fill(255);
-      text("Swap", width - buttonWidth/2 - 10, startY + (buttonHeight + buttonSpacing) * 2 + buttonHeight/2);
-    }
-  } else {
-    // Original desktop layout
-    let buttonY = 50;
-    let buttonWidth = 150;
-    let buttonSpacing = buttonWidth + 20;
-    let startX = width - buttonWidth * 3 - 60;
-    
-    // End Turn button
-    fill(100, 100, 100);
-    rect(startX, buttonY, buttonWidth, buttonHeight, 5);
-    fill(255);
-    textAlign(CENTER, CENTER);
-    text("End Turn", startX + buttonWidth/2, buttonY + buttonHeight/2);
-    
-    // Show Discard for Movement button in both modes
-    fill(gameState.discardMode ? color(200, 0, 0) : color(100, 100, 100));
-    rect(startX + buttonSpacing * 2, buttonY, buttonWidth, buttonHeight, 5);
-    fill(255);
-    text("Discard to Move", startX + buttonSpacing * 2 + buttonWidth/2, buttonY + buttonHeight/2);
-    
-    // Only show Swap Tile button in 2-player mode
-    if (!gameState.soloMode) {
-      fill(gameState.swapMode ? color(200, 200, 0) : color(100, 100, 100));
-      rect(startX + buttonSpacing, buttonY, buttonWidth, buttonHeight, 5);
-      fill(255);
-      text("Swap Tile", startX + buttonSpacing + buttonWidth/2, buttonY + buttonHeight/2);
-    }
+    text("Swap Tile", startX + buttonSpacing + buttonWidth/2, buttonY + buttonHeight/2);
   }
 }
 
@@ -1673,20 +1642,10 @@ function shuffleArray(array) {
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   
-  // Adjust tile size based on device
-  if (isMobileDevice()) {
-    // For mobile, make tiles larger relative to screen width
-    gameState.tileSize = constrain(width / 6, 60, 100);
-  } else {
-    // For desktop, keep original scaling
-    let minDimension = min(width, height);
-    gameState.tileSize = constrain(minDimension / 10, 40, 80);
-  }
-}
-
-// Add helper function to detect mobile devices
-function isMobileDevice() {
-  return (width <= 768 || height <= 480);
+  // Recalculate game scale based on new dimensions
+  // This ensures the game remains playable on orientation change
+  let minDimension = min(width, height);
+  gameState.tileSize = constrain(minDimension / 10, 40, 80);
 }
 
 function isValidMoveTarget(x, y) {
