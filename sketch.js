@@ -7,7 +7,7 @@ let gameState = {
     { ship: null, tiles: [], movementTokens: 3, color: "#4444ff" }
   ],
   placedTiles: {},
-  tileSize: 80,
+  tileSize: 90,
   tileTypes: [],
   drawPile: [],
   discardPile: [],
@@ -26,7 +26,19 @@ let gameState = {
   gameStarted: false,
   soloMode: false,
   selectingTileToKeep: false,
-  touchStartPos: null
+  touchStartPos: null,
+  viewX: 0,
+  viewY: 0,
+  targetViewX: 0,
+  targetViewY: 0,
+  viewTransitionSpeed: 0.1,
+  isViewTransitioning: false,
+  shipAnimationProgress: 0,
+  shipFromX: 0,
+  shipFromY: 0,
+  shipToX: 0,
+  shipToY: 0,
+  isShipMoving: false
 };
 
 // Initialize game assets
@@ -326,6 +338,13 @@ function initializeGame() {
     
     addMessage("2-player game started! Player 1's turn");
   }
+  
+  // Initialize view position
+  let startPlayer = gameState.players[gameState.currentPlayer];
+  gameState.viewX = startPlayer.ship.x;
+  gameState.viewY = startPlayer.ship.y;
+  gameState.targetViewX = gameState.viewX;
+  gameState.targetViewY = gameState.viewY;
 }
 
 function draw() {
@@ -334,18 +353,21 @@ function draw() {
     return;
   }
   
+  // Update animations
+  updateAnimations();
+  
+  // Clear background
   background(30, 58, 138); // North Sea blue
   
-  // Draw game board
+  // Draw game board with camera offset
   push();
-  translate(width/2, height/2);
+  translate(width/2 - gameState.viewX * gameState.tileSize, 
+           height/2 - gameState.viewY * gameState.tileSize);
   drawBoard();
   pop();
   
-  // Draw player hands and UI
+  // Draw UI elements (these stay fixed on screen)
   drawPlayerUI();
-  
-  // Draw action buttons - add this line
   drawActionButtons();
   
   // Draw dragged tile if any
@@ -406,11 +428,7 @@ function drawIntroScreen() {
 }
 
 function drawBoard() {
-  // Calculate the grid bounds for what's visible
-  let visibleWidth = Math.ceil(width / gameState.tileSize);
-  let visibleHeight = Math.ceil(height / gameState.tileSize);
-  
-  // Draw the grid and placed tiles
+  // Draw placed tiles
   for (let key in gameState.placedTiles) {
     let pos = key.split(',');
     let x = parseInt(pos[0]);
@@ -425,19 +443,29 @@ function drawBoard() {
     pop();
   }
   
-  // Draw ships
+  // Draw ships with animation
   for (let i = 0; i < gameState.players.length; i++) {
     let player = gameState.players[i];
     if (player.ship) {
-      let shipX = player.ship.x * gameState.tileSize - shipImages[i].width/2;
-      let shipY = player.ship.y * gameState.tileSize - shipImages[i].height/2;
+      let shipX, shipY;
       
-      // Draw active ship indicator (only in 2-player mode)
+      if (i === gameState.currentPlayer && gameState.isShipMoving) {
+        // Interpolate position for animated ship
+        shipX = lerp(gameState.shipFromX, gameState.shipToX, gameState.shipAnimationProgress);
+        shipY = lerp(gameState.shipFromY, gameState.shipToY, gameState.shipAnimationProgress);
+      } else {
+        shipX = player.ship.x;
+        shipY = player.ship.y;
+      }
+      
+      let screenX = shipX * gameState.tileSize - shipImages[i].width/2;
+      let screenY = shipY * gameState.tileSize - shipImages[i].height/2;
+      
+      // Draw active ship indicator
       if (i === gameState.currentPlayer) {
         push();
-        translate(player.ship.x * gameState.tileSize, player.ship.y * gameState.tileSize);
+        translate(shipX * gameState.tileSize, shipY * gameState.tileSize);
         
-        // Animated highlight circle (only in 2-player mode)
         if (!gameState.soloMode) {
           noFill();
           stroke(255, 255, 0, 150 + sin(frameCount * 0.1) * 50);
@@ -486,12 +514,11 @@ function drawBoard() {
         pop();
       }
       
-      // Draw the ship
-      image(shipImages[i], shipX, shipY);
+      image(shipImages[i], screenX, screenY);
     }
   }
   
-  // Highlight valid placement locations for current player
+  // Draw valid placement highlights
   highlightValidPlacements();
 }
 
@@ -1070,20 +1097,25 @@ function mousePressed() {
   if (!gameState.movementMode && !gameState.discardMode && !gameState.swapMode) {
     let player = gameState.players[gameState.currentPlayer];
     if (player.ship && player.movementTokens > 0) {
-      // Convert mouse position to grid coordinates
-      let gridX = Math.floor((mouseX - width/2) / gameState.tileSize + 0.5);
-      let gridY = Math.floor((mouseY - height/2) / gameState.tileSize + 0.5);
+      // Convert mouse position to grid coordinates, accounting for view position and centering
+      let gridX = Math.floor((mouseX - width/2 + gameState.viewX * gameState.tileSize) / gameState.tileSize + 0.5);
+      let gridY = Math.floor((mouseY - height/2 + gameState.viewY * gameState.tileSize) / gameState.tileSize + 0.5);
       
-      // Check if click is on current player's ship
-      if (gridX === player.ship.x && gridY === player.ship.y) {
+      // Add a small tolerance for clicking
+      let shipScreenX = width/2 + (player.ship.x - gameState.viewX) * gameState.tileSize;
+      let shipScreenY = height/2 + (player.ship.y - gameState.viewY) * gameState.tileSize;
+      let clickDistance = dist(mouseX, mouseY, shipScreenX, shipScreenY);
+      
+      // Check if click is within ship's radius
+      if (clickDistance < gameState.tileSize * 0.5) {
         checkMoveTargets();
         return;
       }
     }
   } else if (gameState.movementMode) {
-    // Handle movement target selection
-    let gridX = Math.floor((mouseX - width/2) / gameState.tileSize + 0.5);
-    let gridY = Math.floor((mouseY - height/2) / gameState.tileSize + 0.5);
+    // Handle movement target selection with adjusted coordinates and tolerance
+    let gridX = Math.floor((mouseX - width/2 + gameState.viewX * gameState.tileSize) / gameState.tileSize + 0.5);
+    let gridY = Math.floor((mouseY - height/2 + gameState.viewY * gameState.tileSize) / gameState.tileSize + 0.5);
     
     if (isValidMoveTarget(gridX, gridY)) {
       moveShip(gridX, gridY);
@@ -1209,12 +1241,9 @@ function mouseReleased() {
   
   // If we were dragging a tile, try to place it
   if (gameState.draggedTile) {
-    // Convert mouse position to grid position relative to board center
-    let gridX = Math.floor((mouseX - width/2) / gameState.tileSize + 0.5);
-    let gridY = Math.floor((mouseY - height/2) / gameState.tileSize + 0.5);
-    
-    console.log("Attempting to place at grid position:", gridX, gridY);
-    console.log("Valid placement:", isValidPlacement(gridX, gridY));
+    // Convert mouse position to grid position, accounting for view position
+    let gridX = Math.floor((mouseX - width/2 + gameState.viewX * gameState.tileSize) / gameState.tileSize + 0.5);
+    let gridY = Math.floor((mouseY - height/2 + gameState.viewY * gameState.tileSize) / gameState.tileSize + 0.5);
     
     // Check if valid placement
     if (isValidPlacement(gridX, gridY)) {
@@ -1267,13 +1296,12 @@ function isValidPlacement(x, y) {
   
   // Check if adjacent to current ship position
   let isAdjacent = (
-    (x === shipX && y === shipY - 1) || // top
-    (x === shipX + 1 && y === shipY) || // right
-    (x === shipX && y === shipY + 1) || // bottom
-    (x === shipX - 1 && y === shipY)    // left
+    (Math.abs(x - shipX) === 1 && y === shipY) || // left or right
+    (Math.abs(y - shipY) === 1 && x === shipX)    // top or bottom
   );
   
   if (!isAdjacent) {
+    console.log("Not adjacent to ship", {x, y, shipX, shipY});
     return false;
   }
   
@@ -1367,6 +1395,11 @@ function placeTile(x, y) {
       gameState.players.every(p => p.tiles.length === 0)) {
     endGame();
   }
+  
+  // Center view on new tile position
+  gameState.targetViewX = x;
+  gameState.targetViewY = y;
+  gameState.isViewTransitioning = true;
 }
 
 function checkMoveTargets() {
@@ -1388,15 +1421,19 @@ function checkMoveTargets() {
 function moveShip(targetX, targetY) {
   let player = gameState.players[gameState.currentPlayer];
   
-  // Move the ship
-  player.ship.x = targetX;
-  player.ship.y = targetY;
+  // Store start and end positions for animation
+  gameState.shipFromX = player.ship.x;
+  gameState.shipFromY = player.ship.y;
+  gameState.shipToX = targetX;
+  gameState.shipToY = targetY;
+  gameState.shipAnimationProgress = 0;
+  gameState.isShipMoving = true;
   
-  // Only use a movement token if in movement mode (not discard mode)
+  // Update movement tokens and messages as before
   if (gameState.movementMode && !gameState.discardMode) {
     player.movementTokens--;
     addMessage(`Player ${gameState.currentPlayer + 1} moved to (${targetX},${targetY}) using a movement token. ${player.movementTokens} tokens left.`);
-  } else if (gameState.discardMode) {
+  } else {
     addMessage(`Player ${gameState.currentPlayer + 1} moved to (${targetX},${targetY}) using a discarded tile`);
   }
   
@@ -1520,6 +1557,9 @@ function endTurn() {
       gameState.players.every(p => p.tiles.length === 0)) {
     endGame();
   }
+  
+  // Center view on current player's ship in both modes
+  centerViewOnCurrentShip();
 }
 
 function updateScore() {
@@ -1613,6 +1653,7 @@ function isValidMoveTarget(x, y) {
   
   // Check if the target position has a tile
   if (!gameState.placedTiles[key]) {
+    // Remove the debug logging completely - it's not needed for gameplay
     return false;
   }
   
@@ -1623,13 +1664,15 @@ function isValidMoveTarget(x, y) {
   
   // Check if the target is adjacent to the ship
   let isAdjacent = (
-    (x === shipX && y === shipY - 1) || // top
-    (x === shipX + 1 && y === shipY) || // right
-    (x === shipX && y === shipY + 1) || // bottom
-    (x === shipX - 1 && y === shipY)    // left
+    (Math.abs(x - shipX) === 1 && y === shipY) || // horizontal
+    (Math.abs(y - shipY) === 1 && x === shipX)    // vertical
   );
   
   if (!isAdjacent) {
+    // Only log when actually clicking, not during movement checks
+    if (mouseIsPressed && Math.abs(x - shipX) <= 2 && Math.abs(y - shipY) <= 2) {
+      console.log("Target not adjacent to ship");
+    }
     return false;
   }
   
@@ -1638,19 +1681,28 @@ function isValidMoveTarget(x, y) {
   
   // Get the direction from ship to target
   let direction = -1;
-  if (x === shipX && y === shipY - 1) direction = 0; // top
-  if (x === shipX + 1 && y === shipY) direction = 1; // right
-  if (x === shipX && y === shipY + 1) direction = 2; // bottom
-  if (x === shipX - 1 && y === shipY) direction = 3; // left
+  if (y === shipY - 1) direction = 0;      // top
+  else if (x === shipX + 1) direction = 1;  // right
+  else if (y === shipY + 1) direction = 2;  // bottom
+  else if (x === shipX - 1) direction = 3;  // left
   
   // Get the opposite direction (from target to ship)
   let oppositeDirection = (direction + 2) % 4;
   
-  // Get rotated edges of the target tile
+  // Get rotated edges of both tiles
   let targetRotatedEdges = rotateEdges(targetTile.edges, targetTile.rotation || 0);
+  let shipTile = gameState.placedTiles[`${shipX},${shipY}`];
+  let shipRotatedEdges = rotateEdges(shipTile.edges, shipTile.rotation || 0);
   
-  // Check if the edge facing the ship is water (0)
-  return targetRotatedEdges[oppositeDirection] === 0;
+  // Check if both edges are water (0)
+  let isValid = targetRotatedEdges[oppositeDirection] === 0 && shipRotatedEdges[direction] === 0;
+  
+  // Only log when actually clicking, not during movement checks
+  if (!isValid && isAdjacent && mouseIsPressed) {
+    console.log("Cannot move: no water connection between tiles");
+  }
+  
+  return isValid;
 }
 
 function toggleDiscardMode() {
@@ -1676,26 +1728,6 @@ function discardTileForMovement(tileIndex) {
   // This way we know this is a discard-based movement
   gameState.movementMode = true;
   addMessage("Click an adjacent water tile to move");
-}
-
-function moveShip(targetX, targetY) {
-  let player = gameState.players[gameState.currentPlayer];
-  
-  // Move the ship
-  player.ship.x = targetX;
-  player.ship.y = targetY;
-  
-  // Only use a movement token if we're in movement mode AND NOT in discard mode
-  if (gameState.movementMode && !gameState.discardMode) {
-    player.movementTokens--;
-    addMessage(`Player ${gameState.currentPlayer + 1} moved to (${targetX},${targetY}) using a movement token. ${player.movementTokens} tokens left.`);
-  } else {
-    addMessage(`Player ${gameState.currentPlayer + 1} moved to (${targetX},${targetY}) using a discarded tile`);
-  }
-  
-  // Reset both modes after movement is complete
-  gameState.movementMode = false;
-  gameState.discardMode = false;
 }
 
 function swapTiles(playerTileIndex, otherTileIndex) {
@@ -1866,4 +1898,47 @@ function touchEnded() {
   
   // Prevent default behavior
   return false;
+}
+
+// Add new animation update function
+function updateAnimations() {
+  // Handle view transitions
+  if (gameState.isViewTransitioning) {
+    let dx = gameState.targetViewX - gameState.viewX;
+    let dy = gameState.targetViewY - gameState.viewY;
+    
+    // Use easing for smooth movement
+    gameState.viewX += dx * gameState.viewTransitionSpeed;
+    gameState.viewY += dy * gameState.viewTransitionSpeed;
+    
+    // Check if we've reached the target (with small threshold)
+    if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
+      gameState.viewX = gameState.targetViewX;
+      gameState.viewY = gameState.targetViewY;
+      gameState.isViewTransitioning = false;
+    }
+  }
+  
+  // Handle ship movement animation
+  if (gameState.isShipMoving) {
+    gameState.shipAnimationProgress += 0.05;
+    
+    if (gameState.shipAnimationProgress >= 1) {
+      // Complete the movement
+      gameState.isShipMoving = false;
+      gameState.shipAnimationProgress = 0;
+      let player = gameState.players[gameState.currentPlayer];
+      player.ship.x = gameState.shipToX;
+      player.ship.y = gameState.shipToY;
+      centerViewOnCurrentShip();
+    }
+  }
+}
+
+// Add function to center view on current ship
+function centerViewOnCurrentShip() {
+  let player = gameState.players[gameState.currentPlayer];
+  gameState.targetViewX = player.ship.x;
+  gameState.targetViewY = player.ship.y;
+  gameState.isViewTransitioning = true;
 }
