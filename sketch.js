@@ -527,12 +527,8 @@ function drawTile(tile, x, y) {
     // Draw base tile
     let tileSize = gameState.tileSize;
 
-    // Base color based on type
-    if (tile.isOpenOcean) {
-        fill(65, 105, 225); // Deep blue for open ocean
-    } else {
-        fill(100, 145, 200); // Lighter blue for coastal waters
-    }
+    // Base color - now the same for both open ocean and coastal waters
+    fill(100, 145, 200); // Lighter blue for all water tiles
 
     stroke(0);
     strokeWeight(1);
@@ -548,35 +544,68 @@ function drawTile(tile, x, y) {
         rotate(i * HALF_PI);
 
         if (rotatedEdges[i] === 1) {
-            // Land - more organic shape with irregular coastline
+            // Land - static irregular coastline
             noStroke();
-            // Darker sand at the back
+            
+            // Use tile's ID for a consistent appearance
+            let tileId = tile.id || 0; // Fallback to 0 if ID is missing
+            
+            // Create seed values based on tile ID and edge
+            let seed1 = tileId * 37 + i * 13;
+            let seed2 = tileId * 23 + i * 5;
+            let seed3 = tileId * 17 + i * 29;
+            
+            // Calculate control points for deeper, more varied coastline
+            let cp1x = -tileSize * 0.25 + sin(seed1 * 0.1) * (tileSize * 0.2);
+            let cp1y = -tileSize * 0.1 + cos(seed1 * 0.2) * (tileSize * 0.15);
+            let cp2x = tileSize * 0.25 + sin(seed2 * 0.1) * (tileSize * 0.2);
+            let cp2y = -tileSize * 0.1 + cos(seed2 * 0.2) * (tileSize * 0.15);
+            
+            // Deeper coastline variables - increased depth for more pronounced shorelines
+            let depth1 = tileSize * (0.6 + sin(seed3 * 0.3) * 0.15); // Varies between 45-75% of tile
+            let depth2 = tileSize * (0.5 + cos(seed3 * 0.2) * 0.15); // Varies between 35-65% of tile
+            
+            // Draw deeper sand background
             fill(255, 200, 140);
             beginShape();
-            vertex(-tileSize / 2, -tileSize / 2);
-            vertex(tileSize / 2, -tileSize / 2);
-            // Create irregular coastline that reaches the corner
+            vertex(-tileSize/2, -tileSize/2); // Top left corner
+            vertex(tileSize/2, -tileSize/2);  // Top right corner
+            
+            // Use a single complex bezier for the coastline - with deeper jutting
             bezierVertex(
-                tileSize / 2, -tileSize / 2 + tileSize / 3,
-                -tileSize / 3, -tileSize / 2 + tileSize / 3.5,
-                -tileSize / 2, -tileSize / 2
+                tileSize/3, -tileSize/2 + depth1 * 0.5, // Control point 1 - deeper into tile
+                -tileSize/3, -tileSize/2 + depth1 * 0.8, // Control point 2 - deeper into tile
+                -tileSize/2, -tileSize/2 // End point (back to top left)
             );
             endShape(CLOSE);
-
-            // Lighter sand at the front
+            
+            // Draw lighter sand foreground with another bezier
             fill(240, 230, 140);
             beginShape();
-            vertex(-tileSize / 2, -tileSize / 2);
-            vertex(tileSize / 2, -tileSize / 2);
-            // Smaller irregular coastline that reaches the corner
+            vertex(-tileSize/2, -tileSize/2); // Top left corner
+            vertex(tileSize/2, -tileSize/2);  // Top right corner
+            
+            // Calculate different control points for variation - with deeper jutting
             bezierVertex(
-                tileSize / 2, -tileSize / 2 + tileSize / 4,
-                -tileSize / 3, -tileSize / 2 + tileSize / 4.5,
-                -tileSize / 2, -tileSize / 2
+                tileSize/4 + cp1x * 0.6, -tileSize/2 + depth2 * 0.8 + cp1y * 0.6, // Control point 1
+                -tileSize/4 + cp2x * 0.6, -tileSize/2 + depth2 * 0.9 + cp2y * 0.6, // Control point 2
+                -tileSize/2, -tileSize/2 // End point (back to top left)
             );
             endShape(CLOSE);
+            
+            // Add static sand details - moved deeper into the tile to match new coastline
+            fill(230, 210, 130, 150);
+            noStroke();
+            for (let j = 0; j < 5; j++) {
+                let bumpSeed = tileId * 17 + i * 19 + j * 31;
+                let bumpX = map(sin(bumpSeed), -1, 1, -tileSize/3, tileSize/3);
+                let bumpY = -tileSize/2 + map(cos(bumpSeed * 1.5), -1, 1, 
+                                            tileSize/3, tileSize/2); // Position bumps deeper into tile
+                let bumpSize = map(sin(bumpSeed * 2.7), -1, 1, tileSize/30, tileSize/20);
+                circle(bumpX, bumpY, bumpSize);
+            }
         } else if (!tile.isOpenOcean) {
-            // Coastal water
+            // Coastal water - static
         } else {
             // Animated waves only on open ocean tiles
             stroke(255, 255, 255, 150);
