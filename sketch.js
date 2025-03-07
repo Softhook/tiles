@@ -1,5 +1,13 @@
 // Beacon Patrol - P5.js Implementation
 
+// Add at the top of the file
+const DIRECTIONS = [
+  {dx: 0, dy: -1, edge: 0, opposite: 2}, // top
+  {dx: 1, dy: 0, edge: 1, opposite: 3},  // right
+  {dx: 0, dy: 1, edge: 2, opposite: 0},  // bottom
+  {dx: -1, dy: 0, edge: 3, opposite: 1}  // left
+];
+
 let gameState = {
   currentPlayer: 0,
   players: [
@@ -956,11 +964,12 @@ function drawInstructions() {
   textAlign(LEFT, TOP);
   textSize(18);
   let instructions = [
-    "Objective: Work together to explore as much sea as possible by surrounding tiles.",
+    "Objective: Explore as much as possible around key features (surrounded on all sides)",
     "Scoring:",
-    "- Explored tiles (surrounded on all sides): 1 point",
     "- Explored tiles with lighthouse: 3 points",
-    "- Explored tiles with beacon buoy: 2 points",
+    "- Explored tiles with beacon: 2 points",
+    "- Explored tiles with windmill: 1 point for nearby ocean tiles",
+    "- Explored tiles: 1 point",
     
     "On Your Turn:",
     "1. Place tiles from your hand (connected to your ship by water)",
@@ -1399,38 +1408,6 @@ function rotateEdges(edges, rotation) {
   return rotated;
 }
 
-function placeTile(x, y) {
-  let player = gameState.players[gameState.currentPlayer];
-  let tile = Object.assign({}, gameState.draggedTile);
-  
-  // Apply rotation
-  tile.rotation = 0;
-  
-  // Add the tile to the board
-  let key = `${x},${y}`;
-  gameState.placedTiles[key] = tile;
-  
-  // Move the ship to the new tile
-  player.ship.x = x;
-  player.ship.y = y;
-  
-  // Remove the tile from the player's hand
-  player.tiles.splice(gameState.draggedTileIndex, 1);
-  
-  addMessage(`Player ${gameState.currentPlayer + 1} placed a tile at (${x},${y})`);
-  
-  // Check for game over
-  if (gameState.drawPile.length === 0 && 
-      gameState.players.every(p => p.tiles.length === 0)) {
-    endGame();
-  }
-  
-  // Center view on new tile position
-  gameState.targetViewX = x;
-  gameState.targetViewY = y;
-  gameState.isViewTransitioning = true;
-}
-
 function checkMoveTargets() {
   // Implement ship movement logic
   let player = gameState.players[gameState.currentPlayer];
@@ -1492,37 +1469,6 @@ function toggleSwapMode() {
     addMessage("Select one of your tiles to swap with another player");
   } else {
     addMessage("Swap mode canceled");
-  }
-}
-
-function handleTileSwap(playerIndex, tileIndex) {
-  let currentPlayer = gameState.currentPlayer;
-  
-  // If this is the first selection, store it
-  if (gameState.swapTileIndex === -1) {
-    if (playerIndex === currentPlayer) {
-      gameState.swapTileIndex = tileIndex;
-      addMessage("Now select another player's tile to swap with");
-    } else {
-      addMessage("Select one of your tiles first");
-    }
-    return;
-  }
-  
-  // If this is the second selection, perform the swap
-  if (playerIndex !== currentPlayer) {
-    // Swap tiles
-    let temp = gameState.players[currentPlayer].tiles[gameState.swapTileIndex];
-    gameState.players[currentPlayer].tiles[gameState.swapTileIndex] = gameState.players[playerIndex].tiles[tileIndex];
-    gameState.players[playerIndex].tiles[tileIndex] = temp;
-    
-    addMessage(`Player ${currentPlayer + 1} swapped a tile with Player ${playerIndex + 1}`);
-    
-    // Exit swap mode
-    gameState.swapMode = false;
-    gameState.swapTileIndex = -1;
-  } else {
-    addMessage("Select a different player's tile to swap with");
   }
 }
 
@@ -1591,55 +1537,6 @@ function endTurn() {
   centerViewOnCurrentShip();
 }
 
-function updateScore() {
-  // Check for surrounded tiles
-  for (let key in gameState.placedTiles) {
-    let tile = gameState.placedTiles[key];
-    
-    // Skip tiles that are already scored
-    if (tile.scored) continue;
-    
-    let [x, y] = key.split(',').map(Number);
-    
-    // Check if surrounded on all sides
-    let isSurrounded = true;
-    let directions = [
-      {dx: 0, dy: -1},  // top
-      {dx: 1, dy: 0},   // right
-      {dx: 0, dy: 1},   // bottom
-      {dx: -1, dy: 0}   // left
-    ];
-    
-    for (let dir of directions) {
-      let adjX = x + dir.dx;
-      let adjY = y + dir.dy;
-      let adjKey = `${adjX},${adjY}`;
-      
-      // If any adjacent position is empty, the tile is not explored
-      if (!gameState.placedTiles[adjKey]) {
-        isSurrounded = false;
-        break;
-      }
-    }
-    
-    if (isSurrounded) {
-      // Mark as scored
-      tile.scored = true;
-      
-      // Add points based on tile type
-      if (tile.hasLighthouse) {
-        gameState.score += 3;
-        addMessage(`Lighthouse tile surrounded: +3 points`);
-      } else if (tile.hasBeacon) {
-        gameState.score += 2;
-        addMessage(`Beacon tile surrounded: +2 points`);
-      } else {
-        gameState.score += 1;
-        addMessage(`Tile surrounded: +1 point`);
-      }
-    }
-  }
-}
 
 function endGame() {
   // Calculate final score
@@ -1670,11 +1567,9 @@ function shuffleArray(array) {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  
-  // Recalculate game scale based on new dimensions
-  // This ensures the game remains playable on orientation change
-  let minDimension = min(width, height);
-  gameState.tileSize = constrain(minDimension / 10, 40, 80);
+  // Should also recreate backgroundImage to match new dimensions
+  backgroundImage = createGraphics(width, height);
+  // ... recreate background
 }
 
 function isValidMoveTarget(x, y) {
@@ -1970,4 +1865,12 @@ function centerViewOnCurrentShip() {
   gameState.targetViewX = player.ship.x;
   gameState.targetViewY = player.ship.y;
   gameState.isViewTransitioning = true;
+}
+
+function getDirection(fromX, fromY, toX, toY) {
+  if (toY === fromY - 1) return 0;      // top
+  if (toX === fromX + 1) return 1;      // right
+  if (toY === fromY + 1) return 2;      // bottom
+  if (toX === fromX - 1) return 3;      // left
+  return -1;
 }
