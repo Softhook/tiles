@@ -1567,7 +1567,11 @@ function shuffleArray(array) {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  // Should also recreate backgroundImage to match new dimensions
+
+  // Recalculate game scale based on new dimensions
+  // This ensures the game remains playable on orientation change
+  let minDimension = min(width, height);
+  gameState.tileSize = constrain(minDimension / 10, 60, 90);
   backgroundImage = createGraphics(width, height);
   // ... recreate background
 }
