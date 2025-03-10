@@ -882,7 +882,7 @@ function drawPlayerUI() {
 
 function drawActionButtons() {
   let buttonY = 50;
-  let buttonWidth = 150;
+  let buttonWidth = 100;
   let buttonHeight = 40;
   let buttonSpacing = buttonWidth + 20;
   let startX = width - buttonWidth * 3 - 60;
@@ -898,7 +898,7 @@ function drawActionButtons() {
   fill(gameState.discardMode ? color(200, 0, 0) : color(100, 100, 100));
   rect(startX + buttonSpacing * 2, buttonY, buttonWidth, buttonHeight, 5);
   fill(255);
-  text("Discard to Move", startX + buttonSpacing * 2 + buttonWidth/2, buttonY + buttonHeight/2);
+  text("Discard", startX + buttonSpacing * 2 + buttonWidth/2, buttonY + buttonHeight/2);
   
   // Only show Swap Tile button in 2-player mode
   if (!gameState.soloMode) {
@@ -1126,7 +1126,7 @@ function mousePressed() {
   
   // Handle action buttons
   let buttonY = 50;
-  let buttonWidth = 150;
+  let buttonWidth = 100;
   let buttonHeight = 40;
   let buttonSpacing = buttonWidth + 20;
   let startX = width - buttonWidth * 3 - 60;
@@ -1302,7 +1302,7 @@ function mouseReleased() {
       player.ship.x = gridX;
       player.ship.y = gridY;
       
-      addMessage(`Player ${gameState.currentPlayer + 1} placed a tile at (${gridX},${gridY}) and moved there`);
+      addMessage(`Player ${gameState.currentPlayer + 1} placed a tile and moved there`);
       
       // Check for game over condition
       if (gameState.drawPile.length === 0 && 
@@ -1438,9 +1438,9 @@ function moveShip(targetX, targetY) {
   // Update movement tokens and messages as before
   if (gameState.movementMode && !gameState.discardMode) {
     player.movementTokens--;
-    addMessage(`Player ${gameState.currentPlayer + 1} moved to (${targetX},${targetY}) using a movement token. ${player.movementTokens} tokens left.`);
+    addMessage(`Player ${gameState.currentPlayer + 1} moved using a movement token. ${player.movementTokens} tokens left.`);
   } else {
-    addMessage(`Player ${gameState.currentPlayer + 1} moved to (${targetX},${targetY}) using a discarded tile`);
+    addMessage(`Player ${gameState.currentPlayer + 1} moved using a discarded tile`);
   }
   
   // Reset movement modes
