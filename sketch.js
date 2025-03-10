@@ -532,236 +532,185 @@ function drawBoard() {
 
 
 function drawTile(tile, x, y) {
-    // Draw base tile
     let tileSize = gameState.tileSize;
+    drawBaseTile(x, y, tileSize);
+    let rotatedEdges = rotateEdges(tile.edges, tile.rotation);
+    drawEdges(rotatedEdges, tile, x, y, tileSize);
+    drawSpecialFeatures(tile, rotatedEdges, x, y, tileSize);
+    drawWindmill(tile, x, y, tileSize);
+    drawPointsValue(tile, x, y, tileSize);
+}
 
-    // Base color - now the same for both open ocean and coastal waters
-    fill(100, 145, 200); // Lighter blue for all water tiles
-
+function drawBaseTile(x, y, tileSize) {
+    fill(100, 145, 200);
     stroke(0);
     strokeWeight(1);
     rect(x, y, tileSize, tileSize);
+}
 
-    // Draw edges
-    let rotatedEdges = rotateEdges(tile.edges, tile.rotation || 0);
-
-    // Draw water/land edges more distinctly
+function drawEdges(rotatedEdges, tile, x, y, tileSize) {
     for (let i = 0; i < 4; i++) {
         push();
         translate(x + tileSize / 2, y + tileSize / 2);
         rotate(i * HALF_PI);
-
         if (rotatedEdges[i] === 1) {
-            // Land - static irregular coastline
-            noStroke();
-            
-            // Use tile's ID for a consistent appearance
-            let tileId = tile.id || 0; // Fallback to 0 if ID is missing
-            
-            // Create seed values based on tile ID and edge
-            let seed1 = tileId * 37 + i * 13;
-            let seed2 = tileId * 23 + i * 5;
-            let seed3 = tileId * 17 + i * 29;
-            
-            // Calculate control points for deeper, more varied coastline
-            let cp1x = -tileSize * 0.25 + sin(seed1 * 0.1) * (tileSize * 0.2);
-            let cp1y = -tileSize * 0.1 + cos(seed1 * 0.2) * (tileSize * 0.15);
-            let cp2x = tileSize * 0.25 + sin(seed2 * 0.1) * (tileSize * 0.2);
-            let cp2y = -tileSize * 0.1 + cos(seed2 * 0.2) * (tileSize * 0.15);
-            
-            // Deeper coastline variables - increased depth for more pronounced shorelines
-            let depth1 = tileSize * (0.6 + sin(seed3 * 0.3) * 0.15); // Varies between 45-75% of tile
-            let depth2 = tileSize * (0.5 + cos(seed3 * 0.2) * 0.15); // Varies between 35-65% of tile
-            
-            // Draw deeper sand background
-            fill(255, 200, 140);
-            beginShape();
-            vertex(-tileSize/2, -tileSize/2); // Top left corner
-            vertex(tileSize/2, -tileSize/2);  // Top right corner
-            
-            // Use a single complex bezier for the coastline - with deeper jutting
-            bezierVertex(
-                tileSize/3, -tileSize/2 + depth1 * 0.5, // Control point 1 - deeper into tile
-                -tileSize/3, -tileSize/2 + depth1 * 0.8, // Control point 2 - deeper into tile
-                -tileSize/2, -tileSize/2 // End point (back to top left)
-            );
-            endShape(CLOSE);
-            
-            // Draw lighter sand foreground with another bezier
-            fill(240, 230, 140);
-            beginShape();
-            vertex(-tileSize/2, -tileSize/2); // Top left corner
-            vertex(tileSize/2, -tileSize/2);  // Top right corner
-            
-            // Calculate different control points for variation - with deeper jutting
-            bezierVertex(
-                tileSize/4 + cp1x * 0.6, -tileSize/2 + depth2 * 0.8 + cp1y * 0.6, // Control point 1
-                -tileSize/4 + cp2x * 0.6, -tileSize/2 + depth2 * 0.9 + cp2y * 0.6, // Control point 2
-                -tileSize/2, -tileSize/2 // End point (back to top left)
-            );
-            endShape(CLOSE);
-            
-            // Add static sand details - moved deeper into the tile to match new coastline
-            fill(230, 210, 130, 150);
-            noStroke();
-            for (let j = 0; j < 5; j++) {
-                let bumpSeed = tileId * 17 + i * 19 + j * 31;
-                let bumpX = map(sin(bumpSeed), -1, 1, -tileSize/3, tileSize/3);
-                let bumpY = -tileSize/2 + map(cos(bumpSeed * 1.5), -1, 1, 
-                                            tileSize/3, tileSize/2); // Position bumps deeper into tile
-                let bumpSize = map(sin(bumpSeed * 2.7), -1, 1, tileSize/30, tileSize/20);
-                circle(bumpX, bumpY, bumpSize);
-            }
+            drawLandEdge(tile, i, tileSize);
         } else if (!tile.isOpenOcean) {
             // Coastal water - static
         } else {
-            // Animated waves only on open ocean tiles
-            stroke(255, 255, 255, 150);
-            strokeWeight(1);
-            for (let j = 0; j < 3; j++) {
-                let y = -tileSize / 2 + j * 5 + 2;
-                beginShape();
-                for (let x = -tileSize / 2; x <= tileSize / 2; x += 5) {
-                    vertex(x, y + sin(frameCount * 0.05 + x * 0.1) * 2);
-                }
-                endShape();
-            }
+            drawOpenOceanWaves(tileSize);
         }
         pop();
     }
+}
 
-    // Draw special features
+function drawLandEdge(tile, edgeIndex, tileSize) {
+    noStroke();
+    let tileId = tile.id || 0;
+    let seed1 = tileId * 37 + edgeIndex * 13;
+    let seed2 = tileId * 23 + edgeIndex * 5;
+    let seed3 = tileId * 17 + edgeIndex * 29;
+    let cp1x = -tileSize * 0.25 + sin(seed1 * 0.1) * (tileSize * 0.2);
+    let cp1y = -tileSize * 0.1 + cos(seed1 * 0.2) * (tileSize * 0.15);
+    let cp2x = tileSize * 0.25 + sin(seed2 * 0.1) * (tileSize * 0.2);
+    let cp2y = -tileSize * 0.1 + cos(seed2 * 0.2) * (tileSize * 0.15);
+    let depth1 = tileSize * (0.6 + sin(seed3 * 0.3) * 0.15);
+    let depth2 = tileSize * (0.5 + cos(seed3 * 0.2) * 0.15);
+    drawSandBackground(tileSize, depth1);
+    drawSandForeground(tileSize, cp1x, cp1y, cp2x, cp2y, depth2);
+    drawSandDetails(tileId, edgeIndex, tileSize);
+}
+
+function drawSandBackground(tileSize, depth1) {
+    fill(255, 200, 140);
+    beginShape();
+    vertex(-tileSize / 2, -tileSize / 2);
+    vertex(tileSize / 2, -tileSize / 2);
+    bezierVertex(tileSize / 3, -tileSize / 2 + depth1 * 0.5, -tileSize / 3, -tileSize / 2 + depth1 * 0.8, -tileSize / 2, -tileSize / 2);
+    endShape(CLOSE);
+}
+
+function drawSandForeground(tileSize, cp1x, cp1y, cp2x, cp2y, depth2) {
+    fill(240, 230, 140);
+    beginShape();
+    vertex(-tileSize / 2, -tileSize / 2);
+    vertex(tileSize / 2, -tileSize / 2);
+    bezierVertex(tileSize / 4 + cp1x * 0.6, -tileSize / 2 + depth2 * 0.8 + cp1y * 0.6, -tileSize / 4 + cp2x * 0.6, -tileSize / 2 + depth2 * 0.9 + cp2y * 0.6, -tileSize / 2, -tileSize / 2);
+    endShape(CLOSE);
+}
+
+function drawSandDetails(tileId, edgeIndex, tileSize) {
+    fill(230, 210, 130, 150);
+    noStroke();
+    for (let j = 0; j < 5; j++) {
+        let bumpSeed = tileId * 17 + edgeIndex * 19 + j * 31;
+        let bumpX = map(sin(bumpSeed), -1, 1, -tileSize / 3, tileSize / 3);
+        let bumpY = -tileSize / 2 + map(cos(bumpSeed * 1.5), -1, 1, tileSize / 3, tileSize / 2);
+        let bumpSize = map(sin(bumpSeed * 2.7), -1, 1, tileSize / 30, tileSize / 20);
+        circle(bumpX, bumpY, bumpSize);
+    }
+}
+
+function drawOpenOceanWaves(tileSize) {
+    stroke(255, 255, 255, 150);
+    strokeWeight(1);
+    for (let j = 0; j < 3; j++) {
+        let y = -tileSize / 2 + j * 5 + 2;
+        beginShape();
+        for (let x = -tileSize / 2; x <= tileSize / 2; x += 5) {
+            vertex(x, y + sin(frameCount * 0.05 + x * 0.1) * 2);
+        }
+        endShape();
+    }
+}
+
+function drawSpecialFeatures(tile, rotatedEdges, x, y, tileSize) {
     push();
     translate(x + tileSize / 2, y + tileSize / 2);
-
-    // Draw lighthouse and beacon first
     if (tile.hasLighthouse) {
-        // Find the land edge to place the lighthouse
-        let landEdgeIndex = rotatedEdges.indexOf(1);
-        // Base of lighthouse
-        fill(200);
-        stroke(0);
-        strokeWeight(1);
-        rect(-tileSize * 0.15, -tileSize * 0.0625, tileSize * 0.3, tileSize * 0.5);
-
-        // Stripes
-        for (let i = 0; i < 3; i++) {
-            fill(255, 0, 0);
-            rect(-tileSize * 0.15, tileSize * 0.0625 + i * tileSize * 0.125, tileSize * 0.3, tileSize * 0.0625);
-        }
-
-        // Top of lighthouse
-        fill(150);
-        rect(-tileSize * 0.1875, -tileSize * 0.1875, tileSize * 0.375, tileSize * 0.125);
-
-        // Light room
-        fill(255);
-        stroke(0);
-        ellipse(0, -tileSize * 0.25, tileSize * 0.25, tileSize * 0.25);
-
-        // Automatically orient the lighthouse to face the water
-        if (landEdgeIndex !== -1) {
-            rotate(landEdgeIndex * HALF_PI);
-        }
+        drawLighthouse(tile, rotatedEdges, tileSize);
     } else if (tile.hasBeacon) {
-        // Buoy with more detail
-        // Base
-        stroke(0);
-        strokeWeight(2);
-        fill(255, 0, 0);
-        ellipse(0, 0, tileSize * 0.3125, tileSize * 0.3125);
-
-        // Stripes
-        fill(255);
-        noStroke();
-        rect(-tileSize * 0.15, -tileSize * 0.0625, tileSize * 0.3, tileSize * 0.125);
-
-        // Top light
-        fill(255, 255, 0);
-        stroke(0);
-        strokeWeight(1);
-        ellipse(0, 0, tileSize * 0.125, tileSize * 0.125);
-
-        // Animated blinking light
-        let blinkSpeed = 0.1;
-        let blinkIntensity = 100 + sin(frameCount * blinkSpeed) * 50;
-        fill(255, 255, 0, blinkIntensity);
-        ellipse(0, 0, tileSize * 0.1875, tileSize * 0.1875);
+        drawBeacon(tileSize);
     }
-
     if (tile.hasPier) {
-        // Find a land edge to connect the pier
-        let landEdgeIndex = rotatedEdges.indexOf(1);
-        if (landEdgeIndex !== -1) {
-            push();
-            rotate(landEdgeIndex * HALF_PI);
-
-            // Main pier structure
-            fill(139, 69, 19);
-            noStroke();
-            rect(-tileSize * 0.3125, -tileSize * 0.1, tileSize * 0.625, tileSize * 0.2);
-
-            // Wooden planks texture
-            stroke(101, 67, 33);
-            strokeWeight(1);
-            for (let i = -tileSize * 0.25; i < tileSize * 0.25; i += tileSize * 0.0625) {
-                line(i, -tileSize * 0.1, i, tileSize * 0.1);
-            }
-
-            // Support posts
-            fill(101, 67, 33);
-            noStroke();
-            rect(-tileSize * 0.25, -tileSize * 0.125, tileSize * 0.075, tileSize * 0.25);
-            rect(0, -tileSize * 0.125, tileSize * 0.075, tileSize * 0.25);
-            rect(tileSize * 0.1875, -tileSize * 0.125, tileSize * 0.075, tileSize * 0.25);
-
-            // Rope details
-            stroke(200);
-            strokeWeight(1);
-            beginShape();
-            for (let x = -tileSize * 0.3125; x < tileSize * 0.3125; x += tileSize * 0.0625) {
-                vertex(x, -tileSize * 0.125 + sin(x * 0.2) * 2);
-            }
-            endShape();
-            pop();
-        }
+        drawPier(tile, rotatedEdges, tileSize);
     }
+    pop();
+}
 
-    // Draw points value for explored tiles - only if the tile is placed on the board
-    if (tile.x !== undefined && tile.y !== undefined) { // Only check for points on placed tiles
+function drawLighthouse(tile, rotatedEdges, tileSize) {
+    let landEdgeIndex = rotatedEdges.indexOf(1);
+    fill(200);
+    stroke(0);
+    strokeWeight(1);
+    rect(-tileSize * 0.15, -tileSize * 0.0625, tileSize * 0.3, tileSize * 0.5);
+    for (let i = 0; i < 3; i++) {
+        fill(255, 0, 0);
+        rect(-tileSize * 0.15, tileSize * 0.0625 + i * tileSize * 0.125, tileSize * 0.3, tileSize * 0.0625);
+    }
+    fill(150);
+    rect(-tileSize * 0.1875, -tileSize * 0.1875, tileSize * 0.375, tileSize * 0.125);
+    fill(255);
+    stroke(0);
+    ellipse(0, -tileSize * 0.25, tileSize * 0.25, tileSize * 0.25);
+    if (landEdgeIndex !== -1) {
+        rotate(landEdgeIndex * HALF_PI);
+    }
+}
+
+function drawBeacon(tileSize) {
+    stroke(0);
+    strokeWeight(2);
+    fill(255, 0, 0);
+    ellipse(0, 0, tileSize * 0.3125, tileSize * 0.3125);
+    fill(255);
+    noStroke();
+    rect(-tileSize * 0.15, -tileSize * 0.0625, tileSize * 0.3, tileSize * 0.125);
+    fill(255, 255, 0);
+    stroke(0);
+    strokeWeight(1);
+    ellipse(0, 0, tileSize * 0.125, tileSize * 0.125);
+    let blinkSpeed = 0.1;
+    let blinkIntensity = 100 + sin(frameCount * blinkSpeed) * 50;
+    fill(255, 255, 0, blinkIntensity);
+    ellipse(0, 0, tileSize * 0.1875, tileSize * 0.1875);
+}
+
+
+function drawPier(tile, rotatedEdges, tileSize) {
+    let landEdgeIndex = rotatedEdges.indexOf(1);
+    if (landEdgeIndex !== -1) {
+        push();
+        rotate(landEdgeIndex * HALF_PI);
+        fill(139, 69, 19);
+        noStroke();
+        rect(-tileSize * 0.3125, -tileSize * 0.1, tileSize * 0.625, tileSize * 0.2);
+        stroke(101, 67, 33);
+        strokeWeight(1);
+        for (let i = -tileSize * 0.25; i < tileSize * 0.25; i += tileSize * 0.0625) {
+            line(i, -tileSize * 0.1, i, tileSize * 0.1);
+        }
+        fill(101, 67, 33);
+        noStroke();
+        rect(-tileSize * 0.25, -tileSize * 0.125, tileSize * 0.075, tileSize * 0.25);
+        rect(0, -tileSize * 0.125, tileSize * 0.075, tileSize * 0.25);
+        rect(tileSize * 0.1875, -tileSize * 0.125, tileSize * 0.075, tileSize * 0.25);
+        stroke(200);
+        strokeWeight(1);
+        beginShape();
+        for (let x = -tileSize * 0.3125; x < tileSize * 0.3125; x += tileSize * 0.0625) {
+            vertex(x, -tileSize * 0.125 + sin(x * 0.2) * 2);
+        }
+        endShape();
+        pop();
+    }
+}
+
+function drawPointsValue(tile, x, y, tileSize) {
+    if (tile.x !== undefined && tile.y !== undefined) {
         let isExplored = isFullyExplored(tile.x, tile.y);
         if (isExplored) {
-            // Calculate points for this tile
-            let points = 1; // Base point
-            if (tile.hasLighthouse) points += 2;
-            if (tile.hasBeacon) points += 1;
-
-            // Calculate windmill points
-            if (tile.hasWindmill) {
-                // Count adjacent open ocean tiles
-                let windmillBonus = 0;
-                let directions = [
-                    { dx: 0, dy: -1 }, // top
-                    { dx: 1, dy: 0 }, // right
-                    { dx: 0, dy: 1 }, // bottom
-                    { dx: -1, dy: 0 } // left
-                ];
-
-                for (let dir of directions) {
-                    let adjX = tile.x + dir.dx;
-                    let adjY = tile.y + dir.dy;
-                    let adjKey = `${adjX},${adjY}`;
-                    let adjTile = gameState.placedTiles[adjKey];
-
-                    if (adjTile && adjTile.isOpenOcean) {
-                        windmillBonus += 1;
-                    }
-                }
-
-                points += windmillBonus;
-            }
-
-            // Draw points value above everything else
+            let points = calculatePoints(tile);
             push();
             fill(255);
             stroke(0);
@@ -772,25 +721,52 @@ function drawTile(tile, x, y) {
             pop();
         }
     }
+}
 
-    // Draw windmill last
+function calculatePoints(tile) {
+    let points = 1;
+    if (tile.hasLighthouse) points += 2;
+    if (tile.hasBeacon) points += 1;
     if (tile.hasWindmill) {
-        // Base of windmill
+        points += calculateWindmillBonus(tile);
+    }
+    return points;
+}
+
+function calculateWindmillBonus(tile) {
+    let windmillBonus = 0;
+    let directions = [
+        { dx: 0, dy: -1 },
+        { dx: 1, dy: 0 },
+        { dx: 0, dy: 1 },
+        { dx: -1, dy: 0 }
+    ];
+    for (let dir of directions) {
+        let adjX = tile.x + dir.dx;
+        let adjY = tile.y + dir.dy;
+        let adjKey = `${adjX},${adjY}`;
+        let adjTile = gameState.placedTiles[adjKey];
+        if (adjTile && adjTile.isOpenOcean) {
+            windmillBonus += 1;
+        }
+    }
+    return windmillBonus;
+}
+
+function drawWindmill(tile, x, y, tileSize) {
+    if (tile.hasWindmill) {
+        push();
+        translate(x + tileSize / 2, y + tileSize / 2);
         fill(150, 75, 0);
         stroke(0);
         strokeWeight(1);
         rect(-tileSize * 0.1, -tileSize * 0.0625, tileSize * 0.2, tileSize * 0.4375);
-
-        // Windmill blades with rotation animation
         push();
         translate(0, 0);
-        rotate(frameCount * 0.02); // Rotate blades
-
+        rotate(frameCount * 0.02);
         fill(200);
         stroke(0);
         strokeWeight(1);
-
-        // Draw four blades
         for (let i = 0; i < 4; i++) {
             push();
             rotate(i * HALF_PI);
@@ -801,15 +777,13 @@ function drawTile(tile, x, y) {
             endShape(CLOSE);
             pop();
         }
-
-        // Center hub
         fill(100);
         ellipse(0, 0, tileSize * 0.1, tileSize * 0.1);
         pop();
+        pop();
     }
-
-    pop();
 }
+
 
 function drawPlayerUI() {
     // Draw all players' hands, not just the current player
@@ -911,15 +885,15 @@ function drawActionButtons() {
 
 function drawMessageLog() {
   let logX = 20;
-  let logY = 50;
+  let logY = 80;
   
   fill(255);
   textAlign(LEFT, TOP);
   textSize(14);
   
-  text("Game Log:", logX, logY);
+  //text("Game Log:", logX, logY);
   
-  for (let i = 0; i < Math.min(gameState.messageLog.length, 5); i++) {
+  for (let i = 0; i < Math.min(gameState.messageLog.length, 2); i++) {
     let message = gameState.messageLog[gameState.messageLog.length - 1 - i];
     text(message, logX, logY + 25 + i * 20);
   }
