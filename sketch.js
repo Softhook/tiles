@@ -1,4 +1,4 @@
-// Beacon Patrol - P5.js Implementation
+// Island Hop - P5.js Implementation
 
 // Add at the top of the file
 const DIRECTIONS = [
@@ -66,9 +66,6 @@ function setup() {
   // Add instruction button
   let instructionsButton = createButton('Instructions');
   instructionsButton.position(10, 10);
-  instructionsButton.mousePressed(() => {
-    gameState.showInstructions = !gameState.showInstructions;
-  });
   
   // Add viewport meta tag for mobile devices
   let meta = document.createElement('meta');
@@ -414,7 +411,7 @@ function drawIntroScreen() {
   fill(255);
   textAlign(CENTER, CENTER);
   textSize(64);
-  text("Beacon Patrol", width/2, height/3);
+  text("Island Hop", width/2, height/3);
   
   // Game mode buttons
   let buttonWidth = 200;
@@ -423,16 +420,16 @@ function drawIntroScreen() {
   
   // Solo mode button
   fill(100, 100, 100);
-  rect(width/2 - buttonWidth - 20, buttonY, buttonWidth, buttonHeight, 10);
+  rect(width/2 - buttonWidth - 10, buttonY, buttonWidth, buttonHeight, 10);
   fill(255);
   textSize(24);
-  text("Solo Mode", width/2 - buttonWidth/2 - 20, buttonY + buttonHeight/2);
+  text("Solo Mode", width/2 - buttonWidth/2 - 10, buttonY + buttonHeight/2);
   
   // 2 Player mode button
   fill(100, 100, 100);
-  rect(width/2 + 20, buttonY, buttonWidth, buttonHeight, 10);
+  rect(width/2 + 10, buttonY, buttonWidth, buttonHeight, 10);
   fill(255);
-  text("2 Player Mode", width/2 + buttonWidth/2 + 20, buttonY + buttonHeight/2);
+  text("2 Player Mode", width/2 + buttonWidth/2 + 10, buttonY + buttonHeight/2);
 }
 
 function drawBoard() {
@@ -708,28 +705,61 @@ function drawPier(tile, rotatedEdges, tileSize) {
 
 function drawPointsValue(tile, x, y, tileSize) {
     if (tile.x !== undefined && tile.y !== undefined) {
-        let isExplored = isFullyExplored(tile.x, tile.y);
-        if (isExplored) {
-            let points = calculatePoints(tile);
-            push();
-            fill(255);
-            stroke(0);
-            strokeWeight(3);
-            textSize(tileSize * 0.3);
-            textAlign(CENTER, CENTER);
-            text(`${points}`, 0, -tileSize * 0.25);
-            pop();
-        }
+        let points = calculatePoints(tile);
+
+        if (points > 0) { 
+        push();
+        fill(255);
+        stroke(0);
+        strokeWeight(3);
+        textSize(tileSize * 0.3);
+        textAlign(CENTER, CENTER);
+        text(`${points}`, 0, -tileSize * 0.25);
+        pop();
+      }
     }
 }
 
 function calculatePoints(tile) {
-    let points = 1;
-    if (tile.hasLighthouse) points += 2;
-    if (tile.hasBeacon) points += 1;
-    if (tile.hasWindmill) {
-        points += calculateWindmillBonus(tile);
+    let points = 0;
+
+    // Check for enclosed land mass
+    points += checkEnclosedLandMass(tile);
+
+    // Only add feature points if the tile is fully explored
+    if (isFullyExplored(tile.x, tile.y)) {
+
+        points += 1; //1 points because its enclosed
+        if (tile.hasLighthouse) points += 2;
+        if (tile.hasBeacon) points += 1;
+        if (tile.hasWindmill) {
+            points += calculateWindmillBonus(tile);
+        }
     }
+
+    return points;
+}
+
+function checkEnclosedLandMass(tile) {
+    let points = 0;
+    let directions = [
+        {dx: 0, dy: -1, edge: 0, opposite: 2}, // top
+        {dx: 1, dy: 0, edge: 1, opposite: 3}, // right
+        {dx: 0, dy: 1, edge: 2, opposite: 0}, // bottom
+        {dx: -1, dy: 0, edge: 3, opposite: 1} // left
+    ];
+
+    for (let dir of directions) {
+        let adjX = tile.x + dir.dx;
+        let adjY = tile.y + dir.dy;
+        let adjKey = `${adjX},${adjY}`;
+        let adjTile = gameState.placedTiles[adjKey];
+
+        if (adjTile && tile.edges[dir.edge] === 1 && adjTile.edges[dir.opposite] === 1) {
+            points += 1;
+        }
+    }
+
     return points;
 }
 
@@ -805,23 +835,23 @@ function drawPlayerUI() {
         // Only draw tokens for current player
         if (playerIndex === gameState.currentPlayer) {
         // Draw movement tokens directly above the player's tiles
-        let tokenY = height - gameState.tileSize * 2.2; // Position above tiles
+        let tokenY = height - gameState.tileSize * 2; // Position above tiles
         
             // Use fixed positions for token background in both modes
             let tokenBgX;
   if (gameState.soloMode) {
-                tokenBgX = width/2 - gameState.tileSize * 2; // Fixed center position in solo mode
+                tokenBgX = width/2 - gameState.tileSize * 1.5; // Fixed center position in solo mode
   } else {
                 // Fixed positions for 2-player mode based on player index
                 tokenBgX = playerIndex === 0 ? 
                     gameState.tileSize : // Left side for player 1
-                    width - gameState.tileSize * 5; // Right side for player 2
+                    width - gameState.tileSize * 4; // Right side for player 2
             }
             
             // Draw token background
             noStroke();
             fill(0, 0, 0, 50);
-            rect(tokenBgX, tokenY - 10, gameState.tileSize * 4, gameState.tileSize/3 + 20, 10);
+            rect(tokenBgX, tokenY - 10, gameState.tileSize * 3, gameState.tileSize/3 + 20, 10);
             
             // Draw movement tokens at fixed positions
             let maxTokens = gameState.soloMode ? 4 : 3;
@@ -933,7 +963,7 @@ function drawInstructions() {
   fill(255);
   textAlign(CENTER, TOP);
   textSize(32);
-  text("Beacon Patrol - Instructions", width/2, 50);
+  text("Island Hop - Instructions", width/2, 50);
   
   textAlign(LEFT, TOP);
   textSize(18);
@@ -943,6 +973,7 @@ function drawInstructions() {
     "- Explored tiles with lighthouse: 3 points",
     "- Explored tiles with beacon: 2 points",
     "- Explored tiles with windmill: 1 point for nearby ocean tiles",
+    "- Each explored land chunk: 1 point",
     "- Explored tiles: 1 point",
     
     "On Your Turn:",
@@ -1042,13 +1073,20 @@ function highlightValidPlacements() {
 }
 
 function mousePressed() {
+
+    // Check instructions button
+    if (mouseX >= 10 && mouseX <= 110 && mouseY >= 10 && mouseY <= 50) {
+        gameState.showInstructions = !gameState.showInstructions;
+        return;
+    }
+
   if (!gameState.gameStarted) {
     let buttonWidth = 200;
     let buttonHeight = 60;
     let buttonY = height/2 + 50;
     
     // Check solo mode button
-    if (mouseX >= width/2 - buttonWidth - 20 && 
+    if (mouseX >= width/2 - buttonWidth - 10 && 
         mouseX <= width/2 - 20 &&
         mouseY >= buttonY && 
         mouseY <= buttonY + buttonHeight) {
@@ -1060,7 +1098,7 @@ function mousePressed() {
     
     // Check 2 player mode button
     if (mouseX >= width/2 + 20 && 
-        mouseX <= width/2 + buttonWidth + 20 &&
+        mouseX <= width/2 + buttonWidth + 10 &&
         mouseY >= buttonY && 
         mouseY <= buttonY + buttonHeight) {
       gameState.soloMode = false;
@@ -1650,81 +1688,15 @@ function swapTiles(playerTileIndex, otherTileIndex) {
 }
 
 function calculateScore() {
-  let score = 0;
-  
-  // Check each placed tile
-  for (let key in gameState.placedTiles) {
-    let pos = key.split(',');
-    let x = parseInt(pos[0]);
-    let y = parseInt(pos[1]);
-    
-    // Check if the tile is explored (surrounded on all four sides)
-    let isExplored = true;
-    
-    // Check all four adjacent positions
-    let directions = [
-      {dx: 0, dy: -1}, // top
-      {dx: 1, dy: 0},  // right
-      {dx: 0, dy: 1},  // bottom
-      {dx: -1, dy: 0}  // left
-    ];
-    
-    for (let dir of directions) {
-      let adjX = x + dir.dx;
-      let adjY = y + dir.dy;
-      let adjKey = `${adjX},${adjY}`;
-      
-      // If any adjacent position is empty, the tile is not explored
-      if (!gameState.placedTiles[adjKey]) {
-        isExplored = false;
-        break;
-      }
+    let score = 0;
+
+    // Check each placed tile
+    for (let key in gameState.placedTiles) {
+        let tile = gameState.placedTiles[key];
+        score += calculatePoints(tile);
     }
-    
-    // If the tile is explored, add points based on its features
-    if (isExplored) {
-      let tile = gameState.placedTiles[key];
-      
-      // Base point for explored tile
-      score += 1;
-      
-      // Additional points for special features
-      if (tile.hasLighthouse) {
-        score += 2;
-      }
-      
-      if (tile.hasBeacon) {
-        score += 1;
-      }
-      
-      if (tile.hasWindmill) {
-        // Count adjacent open ocean tiles
-        let windmillBonus = 0;
-        let directions = [
-          {dx: 0, dy: -1},  // top
-          {dx: 1, dy: 0},   // right
-          {dx: 0, dy: 1},   // bottom
-          {dx: -1, dy: 0}   // left
-        ];
-        
-        for (let dir of directions) {
-          let adjX = x + dir.dx;
-          let adjY = y + dir.dy;
-          let adjKey = `${adjX},${adjY}`;
-          let adjTile = gameState.placedTiles[adjKey];
-          
-          if (adjTile && adjTile.isOpenOcean) {
-            windmillBonus += 1;
-          }
-        }
-        
-        // Add base point plus bonus for adjacent open ocean tiles
-        score += windmillBonus;
-      }
-    }
-  }
-  
-  return score;
+
+    return score;
 }
 
 function isFullyExplored(x, y) {
