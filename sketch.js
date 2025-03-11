@@ -414,7 +414,7 @@ function drawIntroScreen() {
   text("Island Hop", width/2, height/3);
   
   // Game mode buttons
-  let buttonWidth = 200;
+  let buttonWidth = 160;
   let buttonHeight = 60;
   let buttonY = height/2 + 50;
   
@@ -423,13 +423,13 @@ function drawIntroScreen() {
   rect(width/2 - buttonWidth - 10, buttonY, buttonWidth, buttonHeight, 10);
   fill(255);
   textSize(24);
-  text("Solo Mode", width/2 - buttonWidth/2 - 10, buttonY + buttonHeight/2);
+  text("Solo", width/2 - buttonWidth/2 - 10, buttonY + buttonHeight/2);
   
   // 2 Player mode button
   fill(100, 100, 100);
   rect(width/2 + 10, buttonY, buttonWidth, buttonHeight, 10);
   fill(255);
-  text("2 Player Mode", width/2 + buttonWidth/2 + 10, buttonY + buttonHeight/2);
+  text("2 Player", width/2 + buttonWidth/2 + 10, buttonY + buttonHeight/2);
 }
 
 function drawBoard() {
@@ -898,7 +898,7 @@ function drawActionButtons() {
   textAlign(CENTER, CENTER);
   text("End Turn", startX + buttonWidth/2, buttonY + buttonHeight/2);
   
-  // Show Discard for Movement button in both modes
+  // Show Discard button in both modes
   fill(gameState.discardMode ? color(200, 0, 0) : color(100, 100, 100));
   rect(startX + buttonSpacing * 2, buttonY, buttonWidth, buttonHeight, 5);
   fill(255);
@@ -962,17 +962,17 @@ function drawInstructions() {
   
   fill(255);
   textAlign(CENTER, TOP);
-  textSize(32);
+  textSize(26);
   text("Island Hop - Instructions", width/2, 50);
   
   textAlign(LEFT, TOP);
   textSize(18);
   let instructions = [
-    "Objective: Explore as much as possible around key features (surrounded on all sides)",
+    "Objective: Explore features so that they are surrounded on all sides",
     "Scoring:",
-    "- Explored tiles with lighthouse: 3 points",
-    "- Explored tiles with beacon: 2 points",
-    "- Explored tiles with windmill: 1 point for nearby ocean tiles",
+    "- Explore tiles with lighthouse: 3 points",
+    "- Explore tiles with beacon: 2 points",
+    "- Explore tiles with windmill: 1 point for nearby ocean tiles",
     "- Each explored land chunk: 1 point",
     "- Explored tiles: 1 point",
     
