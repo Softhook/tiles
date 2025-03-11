@@ -1,6 +1,6 @@
 // Island Hop - P5.js Implementation
 
-// Add at the top of the file
+
 const DIRECTIONS = [
   {dx: 0, dy: -1, edge: 0, opposite: 2}, // top
   {dx: 1, dy: 0, edge: 1, opposite: 3},  // right
@@ -90,7 +90,7 @@ function setup() {
 function createGameAssets() {
   // Create ship images - making them larger
   for (let i = 0; i < 2; i++) {
-    let shipImg = createGraphics(gameState.tileSize*0.9, gameState.tileSize*0.9); // Bigger ships
+    let shipImg = createGraphics(gameState.tileSize, gameState.tileSize);
     let playerColor = i === 0 ? "#ff4444" : "#4444ff";
     
     // Set background to transparent
@@ -105,8 +105,7 @@ function createGameAssets() {
     shipImg.beginShape();
     shipImg.vertex(shipImg.width*0.2, shipImg.height*0.6);  // Bottom left
     shipImg.vertex(shipImg.width*0.8, shipImg.height*0.6);  // Bottom right
-    shipImg.vertex(shipImg.width*0.9, shipImg.height*0.5);  // Front point
-    shipImg.vertex(shipImg.width*0.8, shipImg.height*0.4);  // Top right
+    shipImg.vertex(shipImg.width*0.9, shipImg.height*0.4);  // Top right
     shipImg.vertex(shipImg.width*0.2, shipImg.height*0.4);  // Top left
     shipImg.endShape(CLOSE);
     
@@ -129,6 +128,7 @@ function createGameAssets() {
     shipImg.noStroke();
     shipImg.fill(255, 255, 255, 150);
     shipImg.ellipse(shipImg.width*0.5, shipImg.height*0.15, shipImg.width*0.1, shipImg.width*0.05);
+    shipImg.ellipse(shipImg.width*0.45, shipImg.height*0.15, shipImg.width*0.1, shipImg.width*0.05);
     
 
     shipImages[i] = shipImg;
@@ -286,65 +286,78 @@ function initializeTileTypes() {
 }
 
 function initializeGame() {
-  // Reset game state
+  resetGameState();
+  placeHQTile();
+  createDrawPile();
+  shuffleDrawPile();
+  initializePlayers();
+  initializeViewPosition();
+}
+
+function resetGameState() {
   gameState.placedTiles = {};
   gameState.drawPile = [];
   gameState.discardPile = [];
   gameState.score = 0;
   gameState.messageLog = [];
   gameState.currentPlayer = 0;
-  
-  // Place the HQ tile
+}
+
+function placeHQTile() {
   let hqTile = Object.assign({}, gameState.beaconHQ);
   gameState.placedTiles["0,0"] = hqTile;
-  
-  // Create draw pile
+}
+
+function createDrawPile() {
   for (let i = 0; i < 63; i++) {
     gameState.drawPile.push(i);
   }
-  
-  // Shuffle the draw pile
+}
+
+function shuffleDrawPile() {
   gameState.drawPile = shuffleArray(gameState.drawPile);
-  
+}
+
+function initializePlayers() {
   if (gameState.soloMode) {
-    // Initialize solo player
-    gameState.players = [{
-      ship: { x: 0, y: 0 },
-      tiles: [],
-      movementTokens: 4,  // Solo mode gets 4 tokens
-      color: "#ff4444"
-    }];
-    
-    // Draw initial 3 tiles
-    for (let i = 0; i < 3; i++) {
-      if (gameState.drawPile.length > 0) {
-        let tileId = gameState.drawPile.pop();
-        gameState.players[0].tiles.push(Object.assign({}, gameState.tileTypes[tileId]));
-      }
-    }
-    
-    addMessage("Solo game started! You have 4 movement tokens.");
+    initializeSoloPlayer();
   } else {
-    // Initialize 2-player mode
-    gameState.players = [
-      { ship: { x: 0, y: 0 }, tiles: [], movementTokens: 3, color: "#ff4444" },
-      { ship: { x: 0, y: 0 }, tiles: [], movementTokens: 3, color: "#4444ff" }
-    ];
-    
-    // Draw initial tiles for both players
-    for (let i = 0; i < 2; i++) {
-      for (let j = 0; j < 3; j++) {
-        if (gameState.drawPile.length > 0) {
-          let tileId = gameState.drawPile.pop();
-          gameState.players[i].tiles.push(Object.assign({}, gameState.tileTypes[tileId]));
-        }
-      }
-    }
-    
-    addMessage("2-player game started! Player 1's turn");
+    initializeTwoPlayerMode();
   }
+}
+
+function initializeSoloPlayer() {
+  gameState.players = [{
+    ship: { x: 0, y: 0 },
+    tiles: [],
+    movementTokens: 4, // Solo mode gets 4 tokens
+    color: "#ff4444"
+  }];
   
-  // Initialize view position
+  drawInitialTiles(gameState.players[0], 3);
+  addMessage("Solo game started! You have 4 movement tokens.");
+}
+
+function initializeTwoPlayerMode() {
+  gameState.players = [
+    { ship: { x: 0, y: 0 }, tiles: [], movementTokens: 3, color: "#ff4444" },
+    { ship: { x: 0, y: 0 }, tiles: [], movementTokens: 3, color: "#4444ff" }
+  ];
+  
+  gameState.players.forEach(player => drawInitialTiles(player, 3));
+  addMessage("2-player game started! Player 1's turn");
+}
+
+function drawInitialTiles(player, count) {
+  for (let i = 0; i < count; i++) {
+    if (gameState.drawPile.length > 0) {
+      let tileId = gameState.drawPile.pop();
+      player.tiles.push(Object.assign({}, gameState.tileTypes[tileId]));
+    }
+  }
+}
+
+function initializeViewPosition() {
   let startPlayer = gameState.players[gameState.currentPlayer];
   gameState.viewX = startPlayer.ship.x;
   gameState.viewY = startPlayer.ship.y;
