@@ -33,6 +33,9 @@ let gameState = {
   discardMode: false,
   gameStarted: false,
   soloMode: false,
+  useWindmillsExpansion: false,
+  usePiersExpansion: false,
+  scoreEnclosedIslands: true,
   selectingTileToKeep: false,
   touchStartPos: null,
   viewX: 0,
@@ -180,8 +183,6 @@ function initializeTileTypes() {
   };
   
   let tileConfigs = [
-    // HQ tile (already defined above)
-    { id: 0, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
     
     // Open ocean tiles (all water edges)
     { id: 1, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
@@ -286,21 +287,41 @@ function initializeTileTypes() {
 }
 
 function initializeGame() {
-  resetGameState();
-  placeHQTile();
-  createDrawPile();
-  shuffleDrawPile();
-  initializePlayers();
+  resetGameState();     // Resets piles, players etc.
+  placeHQTile();        // Places the starting tile
+  createDrawPile();     // Creates the pile BASED ON EXPANSION FLAGS
+  shuffleDrawPile();    // Shuffles the filtered pile
+  initializePlayers();  // Players draw initial tiles from the filtered pile
   initializeViewPosition();
+  // Reset any lingering modes from previous game/intro
+  gameState.movementMode = false;
+  gameState.discardMode = false;
+  gameState.swapMode = false;
+  gameState.selectingTileToKeep = false;
+  gameState.showInstructions = false;
+  gameState.isShipMoving = false;
+  gameState.isViewTransitioning = false;
+  gameState.gameOver = false;
 }
 
 function resetGameState() {
   gameState.placedTiles = {};
-  gameState.drawPile = [];
+  gameState.drawPile = []; // Cleared here, repopulated by createDrawPile
   gameState.discardPile = [];
   gameState.score = 0;
   gameState.messageLog = [];
   gameState.currentPlayer = 0;
+  // DO NOT reset gameState.useWindmillsExpansion or gameState.usePiersExpansion here
+  // DO NOT reset gameState.soloMode here
+  // DO NOT reset gameState.gameStarted here
+  gameState.players = [ // Reset player structure basics
+      { ship: null, tiles: [], movementTokens: 3, color: "#ff4444" },
+      { ship: null, tiles: [], movementTokens: 3, color: "#4444ff" }
+  ];
+   // Other necessary resets
+  gameState.draggedTile = null;
+  gameState.draggedTileIndex = -1;
+  // ... etc. reset any other in-game state variables needed
 }
 
 function placeHQTile() {
@@ -309,9 +330,45 @@ function placeHQTile() {
 }
 
 function createDrawPile() {
-  for (let i = 0; i < 63; i++) {
-    gameState.drawPile.push(i);
+  gameState.drawPile = []; // Start with an empty pile
+
+  // gameState.tileTypes contains the HQ at index 0, and tiles 1-63 at indices 1-63.
+  // We want to iterate through the actual tile definitions (indices 1 through 63).
+  // The total number of non-HQ tile definitions is gameState.tileTypes.length - 1.
+  const totalNonHQTiles = gameState.tileTypes.length - 1; // Should be 63 if initialized correctly
+
+  for (let i = 1; i <= totalNonHQTiles; i++) { // Loop from index 1 up to and including the last tile index
+    let tileConfig = gameState.tileTypes[i];
+    let includeTile = false; // Assume exclusion by default
+
+    // Check if it's a base game tile (neither windmill nor pier)
+    if (!tileConfig.hasWindmill && !tileConfig.hasPier) {
+      includeTile = true;
+    }
+    // OR check if it's a windmill tile and the expansion is active
+    else if (tileConfig.hasWindmill && gameState.useWindmillsExpansion) {
+      includeTile = true;
+    }
+    // OR check if it's a pier tile and the expansion is active
+    else if (tileConfig.hasPier && gameState.usePiersExpansion) {
+      includeTile = true;
+    }
+
+    // If the tile meets the criteria based on active expansions
+    if (includeTile) {
+        // Push the tile's ID (which is equal to its index 'i' in this structure)
+        gameState.drawPile.push(i);
+    }
   }
+
+  console.log(`Created draw pile with ${gameState.drawPile.length} tiles.`); // Add a log to check the count
+  // Expected counts:
+  // Base only: 54
+  // Base + Windmills: 59
+  // Base + Piers: 58
+  // Base + Both: 63
+
+  // The shuffleDrawPile() function will be called after this in initializeGame()
 }
 
 function shuffleDrawPile() {
@@ -419,30 +476,91 @@ function draw() {
 
 function drawIntroScreen() {
   background(30, 58, 138);
-  
+
   // Title
   fill(255);
   textAlign(CENTER, CENTER);
   textSize(64);
-  text("Island Hop", width/2, height/3);
-  
-  // Game mode buttons
-  let buttonWidth = 160;
-  let buttonHeight = 60;
-  let buttonY = height/2 + 50;
-  
-  // Solo mode button
-  fill(100, 100, 100);
-  rect(width/2 - buttonWidth - 10, buttonY, buttonWidth, buttonHeight, 10);
+  text("Island Hop", width / 2, height / 4);
+
+  let buttonWidth = 220;
+  let buttonHeight = 50;
+  let checkboxSize = 30;
+  let spacing = 20;
+  let currentY = height / 2 - buttonHeight; // Start position for UI elements
+
+  // --- Expansion Selection ---
+  textSize(24);
+  textAlign(LEFT, CENTER);
+
+  // Windmills Expansion Toggle
+  let windmillCheckboxX = width / 2 - buttonWidth / 2;
+  let windmillCheckboxY = currentY;
+  fill(gameState.useWindmillsExpansion ? '#4CAF50' : '#cccccc'); // Green if active, grey otherwise
+  stroke(0);
+  strokeWeight(1);
+  rect(windmillCheckboxX, windmillCheckboxY, checkboxSize, checkboxSize, 5);
+  if (gameState.useWindmillsExpansion) {
+      fill(255);
+      textSize(20);
+      text("✔", windmillCheckboxX + checkboxSize / 2 - 10, windmillCheckboxY + checkboxSize / 2); // Checkmark
+  }
   fill(255);
   textSize(24);
-  text("Solo", width/2 - buttonWidth/2 - 10, buttonY + buttonHeight/2);
-  
+  text("Windmills Expansion", windmillCheckboxX + checkboxSize + spacing, windmillCheckboxY + checkboxSize / 2);
+  currentY += buttonHeight + spacing;
+
+  // Piers Expansion Toggle
+  let pierCheckboxX = width / 2 - buttonWidth / 2;
+  let pierCheckboxY = currentY;
+  fill(gameState.usePiersExpansion ? '#4CAF50' : '#cccccc'); // Green if active, grey otherwise
+  stroke(0);
+  rect(pierCheckboxX, pierCheckboxY, checkboxSize, checkboxSize, 5);
+   if (gameState.usePiersExpansion) {
+      fill(255);
+      textSize(20);
+      text("✔", pierCheckboxX + checkboxSize / 2 - 10, pierCheckboxY + checkboxSize / 2); // Checkmark
+  }
+  fill(255);
+  textSize(24);
+  text("Piers Expansion", pierCheckboxX + checkboxSize + spacing, pierCheckboxY + checkboxSize / 2);
+  currentY += buttonHeight + spacing;
+
+// Score Islands Toggle
+let scoreIslandsCheckboxX = width / 2 - buttonWidth / 2;
+let scoreIslandsCheckboxY = currentY;
+fill(gameState.scoreEnclosedIslands ? '#4CAF50' : '#cccccc'); // Green if active
+stroke(0);
+rect(scoreIslandsCheckboxX, scoreIslandsCheckboxY, checkboxSize, checkboxSize, 5);
+if (gameState.scoreEnclosedIslands) {
+    fill(255);
+    textSize(20);
+    text("✔", scoreIslandsCheckboxX + checkboxSize / 2 - 10, scoreIslandsCheckboxY + checkboxSize / 2); // Checkmark
+}
+fill(255);
+textSize(24);
+textAlign(LEFT, CENTER); // Make sure text aligns correctly
+text("Score Islands", scoreIslandsCheckboxX + checkboxSize + spacing, scoreIslandsCheckboxY + checkboxSize / 2);
+currentY += buttonHeight + spacing * 2; // Extra spacing before start buttons
+
+
+  // --- Game Mode Buttons ---
+  textAlign(CENTER, CENTER);
+  let startButtonWidth = 180;
+  let startButtonHeight = 60;
+
+  // Solo mode button
+  fill(100, 100, 100);
+  rect(width/2 - startButtonWidth - spacing/2, currentY, startButtonWidth, startButtonHeight, 10);
+  fill(255);
+  textSize(24);
+  text("Start Solo", width/2 - startButtonWidth/2 - spacing/2, currentY + startButtonHeight/2);
+
   // 2 Player mode button
   fill(100, 100, 100);
-  rect(width/2 + 10, buttonY, buttonWidth, buttonHeight, 10);
+  rect(width/2 + spacing/2, currentY, startButtonWidth, startButtonHeight, 10);
   fill(255);
-  text("2 Player", width/2 + buttonWidth/2 + 10, buttonY + buttonHeight/2);
+  text("Start 2 Player", width/2 + startButtonWidth/2 + spacing/2, currentY + startButtonHeight/2);
 }
 
 function drawBoard() {
@@ -737,7 +855,9 @@ function calculatePoints(tile) {
     let points = 0;
 
     // Check for enclosed land mass
-    points += checkEnclosedLandMass(tile);
+    if (gameState.scoreEnclosedIslands) {
+        points += checkEnclosedLandMass(tile);
+    }
 
     // Only add feature points if the tile is fully explored
     if (isFullyExplored(tile.x, tile.y)) {
@@ -1093,34 +1213,71 @@ function mousePressed() {
         return;
     }
 
-  if (!gameState.gameStarted) {
-    let buttonWidth = 200;
-    let buttonHeight = 60;
-    let buttonY = height/2 + 50;
-    
-    // Check solo mode button
-    if (mouseX >= width/2 - buttonWidth - 10 && 
-        mouseX <= width/2 - 20 &&
-        mouseY >= buttonY && 
-        mouseY <= buttonY + buttonHeight) {
-      gameState.soloMode = true;
-      gameState.gameStarted = true;
-      initializeGame();
-      return;
+    if (!gameState.gameStarted) {
+        let buttonWidth = 220;
+        let buttonHeight = 50;
+        let checkboxSize = 30;
+        let spacing = 20;
+        let currentY = height / 2 - buttonHeight; // Recalculate starting Y
+
+        // Windmills Toggle Check
+        let windmillCheckboxX = width / 2 - buttonWidth / 2;
+        let windmillCheckboxY = currentY;
+        if (mouseX >= windmillCheckboxX && mouseX <= windmillCheckboxX + checkboxSize + buttonWidth && // Wider click area including text
+            mouseY >= windmillCheckboxY && mouseY <= windmillCheckboxY + checkboxSize) {
+            gameState.useWindmillsExpansion = !gameState.useWindmillsExpansion;
+            return; // Prevent other clicks
+        }
+        currentY += buttonHeight + spacing;
+
+        // Piers Toggle Check
+        let pierCheckboxX = width / 2 - buttonWidth / 2;
+        let pierCheckboxY = currentY;
+         if (mouseX >= pierCheckboxX && mouseX <= pierCheckboxX + checkboxSize + buttonWidth && // Wider click area
+             mouseY >= pierCheckboxY && mouseY <= pierCheckboxY + checkboxSize) {
+            gameState.usePiersExpansion = !gameState.usePiersExpansion;
+            return; // Prevent other clicks
+        }
+        currentY += buttonHeight + spacing;
+
+        // Score Islands Toggle Check
+let scoreIslandsCheckboxX = width / 2 - buttonWidth / 2;
+let scoreIslandsCheckboxY = currentY;
+if (mouseX >= scoreIslandsCheckboxX && mouseX <= scoreIslandsCheckboxX + checkboxSize + buttonWidth && // Wider click area
+    mouseY >= scoreIslandsCheckboxY && mouseY <= scoreIslandsCheckboxY + checkboxSize) {
+    gameState.scoreEnclosedIslands = !gameState.scoreEnclosedIslands;
+    console.log("Score Islands toggled:", gameState.scoreEnclosedIslands); // Add log for debugging
+    return; // Prevent other clicks
+}
+currentY += buttonHeight + spacing * 2; // Update currentY before start buttons
+
+        // Start Buttons Check
+        let startButtonWidth = 180;
+        let startButtonHeight = 60;
+
+        // Check solo mode button
+        if (mouseX >= width/2 - startButtonWidth - spacing/2 &&
+            mouseX <= width/2 - spacing/2 &&
+            mouseY >= currentY &&
+            mouseY <= currentY + startButtonHeight) {
+            gameState.soloMode = true;
+            gameState.gameStarted = true;
+            initializeGame(); // Initialize *after* setting flags
+            return;
+        }
+
+        // Check 2 player mode button
+        if (mouseX >= width/2 + spacing/2 &&
+            mouseX <= width/2 + startButtonWidth + spacing/2 &&
+            mouseY >= currentY &&
+            mouseY <= currentY + startButtonHeight) {
+            gameState.soloMode = false;
+            gameState.gameStarted = true;
+            initializeGame(); // Initialize *after* setting flags
+            return;
+        }
+        return; // Exit if on intro screen and no button hit
     }
-    
-    // Check 2 player mode button
-    if (mouseX >= width/2 + 20 && 
-        mouseX <= width/2 + buttonWidth + 10 &&
-        mouseY >= buttonY && 
-        mouseY <= buttonY + buttonHeight) {
-      gameState.soloMode = false;
-      gameState.gameStarted = true;
-      initializeGame();
-      return;
-    }
-    return;
-  }
   
   // Handle clicks on various UI elements
   
