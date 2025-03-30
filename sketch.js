@@ -1075,10 +1075,10 @@ function drawGameOver() {
   text(`Final Score: ${gameState.score}`, width/2, height/2);
   
   let ranking = "Novices";
-  if (gameState.score > 35) ranking = "Sailors";
-  if (gameState.score > 45) ranking = "Captains";
-  if (gameState.score > 55) ranking = "Navigators";
-  if (gameState.score > 65) ranking = "Cartographers";
+  if (gameState.score > 25) ranking = "Sailors";
+  if (gameState.score > 35) ranking = "Captains";
+  if (gameState.score > 45) ranking = "Navigators";
+  if (gameState.score > 55) ranking = "Cartographers";
   
   text(`Ranking: ${ranking}`, width/2, height/2 + 40);
   
