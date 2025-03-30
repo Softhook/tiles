@@ -952,70 +952,62 @@ function drawPlayerUI() {
     // Draw all players' hands, not just the current player
     for (let playerIndex = 0; playerIndex < gameState.players.length; playerIndex++) {
         let player = gameState.players[playerIndex];
-    
-    // Calculate the starting position for the player's hand
-    let startX = gameState.soloMode ? 
-            width/2 - (player.tiles.length * gameState.tileSize)/2 : // Center in solo mode
+
+        // Calculate the starting position for the player's hand
+        let startX = gameState.soloMode ?
+            width / 2 - (player.tiles.length * gameState.tileSize) / 2 : // Center in solo mode
             (playerIndex === 0 ? gameState.tileSize : width - gameState.tileSize * (player.tiles.length + 1)); // Sides in 2-player
-        
-        // Draw player background
+
+        // Draw player background (semi-transparent)
         noStroke();
-        // Highlight current player with more opacity
-        let bgOpacity = playerIndex === gameState.currentPlayer ? "44" : "22";
-        fill(color(player.color + bgOpacity));
-        rect(startX, height - gameState.tileSize * 1.5, player.tiles.length * gameState.tileSize, gameState.tileSize * 1.2, 10);
-        
-        // Only draw tokens for current player
+        let bgOpacity = playerIndex === gameState.currentPlayer ? "44" : "22"; // Hex alpha
+        fill(color(player.color + bgOpacity)); // Apply color and opacity
+        rect(startX - 5, height - gameState.tileSize * 1.5 - 5, player.tiles.length * gameState.tileSize + 10, gameState.tileSize * 1.2 + 10, 10); // Slightly larger bg
+
+        // Draw movement tokens for current player (positioning logic remains the same)
         if (playerIndex === gameState.currentPlayer) {
-        // Draw movement tokens directly above the player's tiles
-        let tokenY = height - gameState.tileSize * 2; // Position above tiles
-        
-            // Use fixed positions for token background in both modes
+            let tokenY = height - gameState.tileSize * 2; // Position above tiles
             let tokenBgX;
-  if (gameState.soloMode) {
-                tokenBgX = width/2 - gameState.tileSize * 1.5; // Fixed center position in solo mode
-  } else {
-                // Fixed positions for 2-player mode based on player index
-                tokenBgX = playerIndex === 0 ? 
+            if (gameState.soloMode) {
+                tokenBgX = width / 2 - gameState.tileSize * 1.5; // Fixed center position in solo mode
+            } else {
+                tokenBgX = playerIndex === 0 ?
                     gameState.tileSize : // Left side for player 1
                     width - gameState.tileSize * 4; // Right side for player 2
             }
-            
-            // Draw token background
             noStroke();
-            fill(0, 0, 0, 50);
-            rect(tokenBgX, tokenY - 10, gameState.tileSize * 3, gameState.tileSize/3 + 20, 10);
-            
-            // Draw movement tokens at fixed positions
+            fill(0, 0, 0, 50); // Token background
+            rect(tokenBgX, tokenY - 10, gameState.tileSize * 3, gameState.tileSize / 3 + 20, 10);
             let maxTokens = gameState.soloMode ? 4 : 3;
             for (let i = 0; i < maxTokens; i++) {
-                let tokenX = tokenBgX + (i * gameState.tileSize/3) + gameState.tileSize/4;
-                if (i < player.movementTokens) {
-                    image(tokenBlue, tokenX, tokenY);
-                } else {
-                    image(tokenRed, tokenX, tokenY);
-                }
+                let tokenX = tokenBgX + (i * gameState.tileSize / 3) + gameState.tileSize / 4;
+                image(i < player.movementTokens ? tokenBlue : tokenRed, tokenX, tokenY);
             }
         }
-        
+
         // Draw player's tiles
         for (let i = 0; i < player.tiles.length; i++) {
             let tile = player.tiles[i];
             let x = startX + i * gameState.tileSize;
             let y = height - gameState.tileSize * 1.4;
-            
-            drawTile(tile, x, y);
-            
-            // Highlight the tile if it's being swapped
+
+            // --- Draw the tile itself FIRST ---
+            drawTile(tile, x, y); // drawTile should handle its own internal push/pop for styles
+
+            // --- THEN draw the highlight if needed, wrapping it ---
+            // Highlight the tile if it's the one selected for swapping
             if (gameState.swapMode && gameState.swapTileIndex === i && gameState.swapPlayerIndex === playerIndex) {
-                stroke(255, 255, 0);
-                strokeWeight(3);
-                noFill();
-                rect(x, y, gameState.tileSize, gameState.tileSize);
+                // *** Wrap highlight drawing in push() and pop() ***
+                push(); // <--- ADDED: Isolate highlight styles
+                stroke(255, 255, 0); // Yellow stroke
+                strokeWeight(4);    // Make it slightly thicker to be obvious
+                noFill();           // IMPORTANT: Don't fill the highlight rectangle
+                rect(x, y, gameState.tileSize, gameState.tileSize); // Draw highlight border
+                pop(); // <--- ADDED: Restore previous drawing styles (fill, stroke, weight)
             }
-        }
-    }
-}
+        } // End loop through player's tiles
+    } // End loop through players
+} // End drawPlayerUI
 
 function drawActionButtons() {
   let buttonY = 50;
@@ -1207,23 +1199,24 @@ function highlightValidPlacements() {
 
 function mousePressed() {
 
-    // Check instructions button
+    // Check instructions button first (top-left)
     if (mouseX >= 10 && mouseX <= 110 && mouseY >= 10 && mouseY <= 50) {
         gameState.showInstructions = !gameState.showInstructions;
-        return;
+        return; // Action handled
     }
 
+    // Handle Intro Screen interactions
     if (!gameState.gameStarted) {
         let buttonWidth = 220;
         let buttonHeight = 50;
         let checkboxSize = 30;
         let spacing = 20;
-        let currentY = height / 2 - buttonHeight; // Recalculate starting Y
+        let currentY = height / 2 - buttonHeight; // Recalculate starting Y for intro elements
 
         // Windmills Toggle Check
         let windmillCheckboxX = width / 2 - buttonWidth / 2;
         let windmillCheckboxY = currentY;
-        if (mouseX >= windmillCheckboxX && mouseX <= windmillCheckboxX + checkboxSize + buttonWidth && // Wider click area including text
+        if (mouseX >= windmillCheckboxX && mouseX <= windmillCheckboxX + checkboxSize + buttonWidth && // Wider click area
             mouseY >= windmillCheckboxY && mouseY <= windmillCheckboxY + checkboxSize) {
             gameState.useWindmillsExpansion = !gameState.useWindmillsExpansion;
             return; // Prevent other clicks
@@ -1241,15 +1234,15 @@ function mousePressed() {
         currentY += buttonHeight + spacing;
 
         // Score Islands Toggle Check
-let scoreIslandsCheckboxX = width / 2 - buttonWidth / 2;
-let scoreIslandsCheckboxY = currentY;
-if (mouseX >= scoreIslandsCheckboxX && mouseX <= scoreIslandsCheckboxX + checkboxSize + buttonWidth && // Wider click area
-    mouseY >= scoreIslandsCheckboxY && mouseY <= scoreIslandsCheckboxY + checkboxSize) {
-    gameState.scoreEnclosedIslands = !gameState.scoreEnclosedIslands;
-    console.log("Score Islands toggled:", gameState.scoreEnclosedIslands); // Add log for debugging
-    return; // Prevent other clicks
-}
-currentY += buttonHeight + spacing * 2; // Update currentY before start buttons
+        let scoreIslandsCheckboxX = width / 2 - buttonWidth / 2;
+        let scoreIslandsCheckboxY = currentY;
+        if (mouseX >= scoreIslandsCheckboxX && mouseX <= scoreIslandsCheckboxX + checkboxSize + buttonWidth && // Wider click area
+            mouseY >= scoreIslandsCheckboxY && mouseY <= scoreIslandsCheckboxY + checkboxSize) {
+            gameState.scoreEnclosedIslands = !gameState.scoreEnclosedIslands;
+            console.log("Score Islands toggled:", gameState.scoreEnclosedIslands);
+            return; // Prevent other clicks
+        }
+        currentY += buttonHeight + spacing * 2; // Update currentY before start buttons
 
         // Start Buttons Check
         let startButtonWidth = 180;
@@ -1263,7 +1256,7 @@ currentY += buttonHeight + spacing * 2; // Update currentY before start buttons
             gameState.soloMode = true;
             gameState.gameStarted = true;
             initializeGame(); // Initialize *after* setting flags
-            return;
+            return; // Action handled
         }
 
         // Check 2 player mode button
@@ -1274,178 +1267,210 @@ currentY += buttonHeight + spacing * 2; // Update currentY before start buttons
             gameState.soloMode = false;
             gameState.gameStarted = true;
             initializeGame(); // Initialize *after* setting flags
-            return;
+            return; // Action handled
         }
-        return; // Exit if on intro screen and no button hit
-    }
-  
-  // Handle clicks on various UI elements
-  
-  // Check if we clicked the instruction button close
-  if (gameState.showInstructions) {
-    let closeButtonX = width/2 - 75;
-    let closeButtonY = height - 100;
-    if (mouseX >= closeButtonX && mouseX <= closeButtonX + 150 &&
-        mouseY >= closeButtonY && mouseY <= closeButtonY + 50) {
-      gameState.showInstructions = false;
-      return;
-    }
-  }
-  
-  // If game is over, check for restart button
-  if (gameState.gameOver) {
-    let buttonX = width/2 - 75;
-    let buttonY = height/2 + 100;
-    if (mouseX >= buttonX && mouseX <= buttonX + 150 &&
-        mouseY >= buttonY && mouseY <= buttonY + 50) {
-      // Reset game state and return to intro screen
-      gameState.gameStarted = false;
-      gameState.gameOver = false;
-      return;
-    }
-    return; // Ignore other clicks during game over
-  }
-  
-  // Handle action buttons
-  let buttonY = 50;
-  let buttonWidth = 100;
-  let buttonHeight = 40;
-  let buttonSpacing = buttonWidth + 20;
-  let startX = width - buttonWidth * 3 - 60;
-  
-  // Check for ship click first (for movement)
-  if (!gameState.movementMode && !gameState.discardMode && !gameState.swapMode) {
-    let player = gameState.players[gameState.currentPlayer];
-    if (player.ship && player.movementTokens > 0) {
-      // Convert mouse position to grid coordinates, accounting for view position and centering
-      let gridX = Math.floor((mouseX - width/2 + gameState.viewX * gameState.tileSize) / gameState.tileSize + 0.5);
-      let gridY = Math.floor((mouseY - height/2 + gameState.viewY * gameState.tileSize) / gameState.tileSize + 0.5);
-      
-      // Add a small tolerance for clicking
-      let shipScreenX = width/2 + (player.ship.x - gameState.viewX) * gameState.tileSize;
-      let shipScreenY = height/2 + (player.ship.y - gameState.viewY) * gameState.tileSize;
-      let clickDistance = dist(mouseX, mouseY, shipScreenX, shipScreenY);
-      
-      // Check if click is within ship's radius
-      if (clickDistance < gameState.tileSize * 0.5) {
-        checkMoveTargets();
+        // If on intro screen and no specific element was clicked, exit.
         return;
+    } // End of !gameState.gameStarted block
+
+    // Handle clicks when instructions are showing (only the close button)
+    if (gameState.showInstructions) {
+        let closeButtonX = width/2 - 75;
+        let closeButtonY = height - 100;
+        if (mouseX >= closeButtonX && mouseX <= closeButtonX + 150 &&
+            mouseY >= closeButtonY && mouseY <= closeButtonY + 50) {
+          gameState.showInstructions = false;
+          return; // Action handled
+        }
+        // Ignore other clicks when instructions are up
+        return;
+    }
+
+    // Handle clicks during Game Over (only the restart button)
+    if (gameState.gameOver) {
+        let buttonX = width/2 - 75;
+        let buttonY = height/2 + 100;
+        if (mouseX >= buttonX && mouseX <= buttonX + 150 &&
+            mouseY >= buttonY && mouseY <= buttonY + 50) {
+          // Reset game state and return to intro screen
+          gameState.gameStarted = false;
+          gameState.gameOver = false;
+          // Potentially call a function here to fully reset if needed,
+          // otherwise, it just goes back to the intro screen state.
+          return; // Action handled
+        }
+        // Ignore other clicks during game over
+        return;
+    }
+
+    // Handle Action Buttons (End Turn, Swap, Discard)
+    let buttonY = 50;
+    let buttonWidth = 100;
+    let buttonHeight = 40;
+    let buttonSpacing = buttonWidth + 20;
+    let actionButtonStartX = width - buttonWidth * 3 - 60; // Renamed startX to avoid conflict
+
+    // End Turn button
+    if (mouseX >= actionButtonStartX && mouseX <= actionButtonStartX + buttonWidth &&
+        mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
+      if (gameState.soloMode && gameState.players[0].tiles.length > 1 && !gameState.selectingTileToKeep) {
+        // Initiate the 'select tile to keep' process in solo mode
+        addMessage("Click on the tile you want to keep");
+        gameState.selectingTileToKeep = true;
+      } else if (gameState.selectingTileToKeep) {
+          // Allow clicking End Turn again to cancel 'select tile to keep'
+          addMessage("Selection cancelled. Click End Turn again to finish or select a tile.");
+          gameState.selectingTileToKeep = false;
+      }
+      else {
+        // Normal end turn or solo mode with 0/1 tile
+        endTurn();
+      }
+      return; // Action handled
+    }
+
+    // Discard for Movement button
+    if (mouseX >= actionButtonStartX + buttonSpacing * 2 && mouseX <= actionButtonStartX + buttonSpacing * 2 + buttonWidth &&
+        mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
+      toggleDiscardMode();
+      return; // Action handled
+    }
+
+    // Swap Tile button (only in 2-player mode)
+    if (!gameState.soloMode) {
+      if (mouseX >= actionButtonStartX + buttonSpacing && mouseX <= actionButtonStartX + buttonSpacing + buttonWidth &&
+          mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
+        toggleSwapMode();
+        return; // Action handled
       }
     }
-  } else if (gameState.movementMode) {
-    // Handle movement target selection with adjusted coordinates and tolerance
+
+    // Check for Ship click (to initiate Movement Mode) OR clicking a movement target tile
+    let clickHandledByMovement = false;
+    // Convert mouse position to grid coordinates for potential map interaction
     let gridX = Math.floor((mouseX - width/2 + gameState.viewX * gameState.tileSize) / gameState.tileSize + 0.5);
     let gridY = Math.floor((mouseY - height/2 + gameState.viewY * gameState.tileSize) / gameState.tileSize + 0.5);
-    
-    if (isValidMoveTarget(gridX, gridY)) {
-      moveShip(gridX, gridY);
-      gameState.movementMode = false;
-      return;
-    }
-  }
 
-  // End Turn button
-  if (mouseX >= startX && mouseX <= startX + buttonWidth &&
-      mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
-    if (gameState.soloMode && gameState.players[0].tiles.length > 1) {
-      addMessage("Click on the tile you want to keep");
-      gameState.selectingTileToKeep = true;
-    } else {
-      endTurn();
-    }
-    return;
-  }
-  
-  // Discard for Movement button (available in both modes)
-  if (mouseX >= startX + buttonSpacing * 2 && mouseX <= startX + buttonSpacing * 2 + buttonWidth &&
-      mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
-    toggleDiscardMode();
-    return;
-  }
-  
-  // Swap Tile button (only in 2-player mode)
-  if (!gameState.soloMode) {
-    if (mouseX >= startX + buttonSpacing && mouseX <= startX + buttonSpacing + buttonWidth &&
-        mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
-      toggleSwapMode();
-      return;
-    }
-  }
-  
-  // Check if clicking on a tile in player's hand
-  let currentPlayer = gameState.players[gameState.currentPlayer];
-  
-  // Calculate the starting position for the player's hand - match the same calculation from drawPlayerUI
-  let handStartX = gameState.soloMode ? 
-      width/2 - (currentPlayer.tiles.length * gameState.tileSize)/2 : // Center in solo mode
-      (gameState.currentPlayer === 0 ? gameState.tileSize : width - gameState.tileSize * (currentPlayer.tiles.length + 1)); // Sides in 2-player
-  
-  for (let i = 0; i < currentPlayer.tiles.length; i++) {
-    let x = handStartX + i * gameState.tileSize;
-    let y = height - gameState.tileSize * 1.4;
-    
-    if (mouseX >= x && mouseX <= x + gameState.tileSize &&
-        mouseY >= y && mouseY <= y + gameState.tileSize) {
-      
-      // Handle different tile selection modes
-      if (gameState.selectingTileToKeep) {
-        // Keep this tile and discard others in solo mode
-        let keptTile = currentPlayer.tiles[i];
-        let discardCount = currentPlayer.tiles.length - 1;
-        currentPlayer.tiles = [keptTile];
-        addMessage(`Kept 1 tile and discarded ${discardCount} tiles`);
-        gameState.selectingTileToKeep = false;
-        endTurn();
-        return;
-      }
-      
-      if (gameState.discardMode) {
-        // Discard tile for movement
-        discardTileForMovement(i);
-        return;
-      }
-      
-      if (gameState.swapMode) {
-        // Handle swap tile selection
-        if (gameState.swapTileIndex === -1) {
-          // First tile selection
-          gameState.swapTileIndex = i;
-          gameState.swapPlayerIndex = gameState.currentPlayer;
-          addMessage("Now select another player's tile to swap with");
-        } else if (gameState.currentPlayer !== gameState.swapPlayerIndex) {
-          // Second tile selection (other player's tile)
-          swapTiles(gameState.swapTileIndex, i);
+    if (gameState.movementMode) {
+        // If already in movement mode, check if clicking a valid target
+        if (isValidMoveTarget(gridX, gridY)) {
+            moveShip(gridX, gridY); // This also sets movementMode = false
+            clickHandledByMovement = true;
+        } else {
+            // Clicking elsewhere on the map cancels movement mode
+            gameState.movementMode = false;
+            addMessage("Movement canceled.");
+            clickHandledByMovement = true; // Click was processed (to cancel mode)
         }
-        return;
-      }
-      
-      // If no special mode is active, start dragging tile
-      gameState.draggedTile = currentPlayer.tiles[i];
-      gameState.draggedTileIndex = i;
-      return;
+    } else if (!gameState.discardMode && !gameState.swapMode) {
+        // If not in movement mode (or other modes), check if clicking the current player's ship
+        let player = gameState.players[gameState.currentPlayer];
+        if (player.ship && player.movementTokens > 0) {
+            let shipScreenX = width/2 + (player.ship.x - gameState.viewX) * gameState.tileSize;
+            let shipScreenY = height/2 + (player.ship.y - gameState.viewY) * gameState.tileSize;
+            let clickDistance = dist(mouseX, mouseY, shipScreenX, shipScreenY);
+
+            // Check if click is within ship's radius
+            if (clickDistance < gameState.tileSize * 0.5) {
+                checkMoveTargets(); // This sets movementMode = true
+                clickHandledByMovement = true;
+            }
+        }
     }
-  }
-  
-  // If in swap mode, check for clicks on other player's tiles
-  if (gameState.swapMode && gameState.swapTileIndex !== -1 && !gameState.soloMode) {
-    let otherPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
-    let otherPlayerObj = gameState.players[otherPlayer];
-    
-    // Calculate the other player's hand position using the same logic as drawPlayerUI
-    let otherHandStartX = (otherPlayer === 0 ? gameState.tileSize : width - gameState.tileSize * (otherPlayerObj.tiles.length + 1));
-    
-    for (let i = 0; i < otherPlayerObj.tiles.length; i++) {
-      let x = otherHandStartX + i * gameState.tileSize;
-      let y = height - gameState.tileSize * 1.4;
-      
-      if (mouseX >= x && mouseX <= x + gameState.tileSize &&
-          mouseY >= y && mouseY <= y + gameState.tileSize) {
-        swapTiles(gameState.swapTileIndex, i);
+    // If click was handled by movement logic, return
+    if (clickHandledByMovement) {
         return;
-      }
     }
-  }
-}
+
+
+    // --- Check if clicking on a tile in ANY player's hand ---
+    // Iterate through each player first
+    for (let playerIndex = 0; playerIndex < gameState.players.length; playerIndex++) {
+        let player = gameState.players[playerIndex];
+
+        // Calculate the starting position for THIS player's hand (matches drawPlayerUI)
+        let handStartX = gameState.soloMode ?
+            width / 2 - (player.tiles.length * gameState.tileSize) / 2 : // Center in solo mode
+            (playerIndex === 0 ? gameState.tileSize : width - gameState.tileSize * (player.tiles.length + 1)); // Sides in 2-player
+
+        // Iterate through this player's tiles
+        for (let i = 0; i < player.tiles.length; i++) {
+            let x = handStartX + i * gameState.tileSize;
+            let y = height - gameState.tileSize * 1.4;
+
+            // Check if the click is within this tile's bounds
+            if (mouseX >= x && mouseX <= x + gameState.tileSize &&
+                mouseY >= y && mouseY <= y + gameState.tileSize) {
+
+                // --- Handle different click modes based on the clicked tile ---
+
+                // 1. Selecting tile to keep (Solo mode end turn - only current player)
+                if (gameState.selectingTileToKeep && playerIndex === gameState.currentPlayer) {
+                    let keptTile = player.tiles[i];
+                    let discardCount = player.tiles.length - 1;
+                    player.tiles = [keptTile]; // Keep only the clicked tile
+                    addMessage(`Kept 1 tile and discarded ${discardCount} tiles.`);
+                    gameState.selectingTileToKeep = false;
+                    endTurn(); // Proceed with ending the turn
+                    return; // Action handled
+                }
+
+                // 2. Discarding tile for movement (Current player only)
+                if (gameState.discardMode && playerIndex === gameState.currentPlayer) {
+                    discardTileForMovement(i); // This will set movementMode = true
+                    return; // Action handled
+                }
+
+                // 3. Swap Mode (Can click on either player's tiles - Not in solo mode)
+                if (gameState.swapMode && !gameState.soloMode) {
+                    if (gameState.swapTileIndex === -1) {
+                        // First tile selected (from any player)
+                        gameState.swapTileIndex = i;
+                        gameState.swapPlayerIndex = playerIndex; // Store WHICH player's tile was clicked
+                        let messagePlayerNum = playerIndex + 1;
+                        addMessage(`Selected Player ${messagePlayerNum}'s tile. Now select a tile from the other player.`);
+                    } else {
+                        // Second tile selected - check if it's the OTHER player
+                        if (playerIndex !== gameState.swapPlayerIndex) {
+                             // Call the updated swapTiles function with all details
+                             swapTiles(gameState.swapTileIndex, gameState.swapPlayerIndex, i, playerIndex);
+                             // swapTiles resets swapMode etc.
+                        } else {
+                            // Clicked on the same player's hand again - reset selection
+                             addMessage("Cannot swap with yourself. Swap selection cleared. Click Swap Tile again or select your tile.");
+                             gameState.swapTileIndex = -1;
+                             gameState.swapPlayerIndex = -1;
+                        }
+                    }
+                    // Regardless of first/second click in swap mode, the click is handled here.
+                    return; // Action handled
+                }
+
+                // 4. Default: Start dragging tile to place (Current player only)
+                if (!gameState.selectingTileToKeep && !gameState.discardMode && !gameState.swapMode &&
+                    playerIndex === gameState.currentPlayer)
+                {
+                    gameState.draggedTile = player.tiles[i];
+                    gameState.draggedTileIndex = i;
+                    return; // Action handled (dragging will start)
+                }
+
+                // If we reach here, it means a click occurred on a tile but didn't match
+                // any active mode's criteria (e.g., clicked opponent tile when not swapping).
+                // We simply return to do nothing.
+                return;
+
+            } // End if click is within tile bounds
+        } // End loop through this player's tiles
+    } // End loop through all players
+
+
+    // If the click wasn't on any specific UI element (buttons, tiles, ship for movement),
+    // and wasn't handled by cancelling movement mode, it might be a click on the empty board.
+    // Currently, this does nothing, but could be used for panning in the future.
+    // console.log("Clicked on empty space or unhandled area.");
+
+} // End of mousePressed function
 
 function mouseDragged() {
   // Only handle dragging if we have a dragged tile
@@ -1840,18 +1865,42 @@ function discardTileForMovement(tileIndex) {
   addMessage("Click an adjacent water tile to move");
 }
 
-function swapTiles(playerTileIndex, otherTileIndex) {
-  let currentPlayer = gameState.currentPlayer;
-  let otherPlayer = (currentPlayer + 1) % gameState.players.length;
-  
-  // Swap the tiles
-  let temp = gameState.players[currentPlayer].tiles[playerTileIndex];
-  gameState.players[currentPlayer].tiles[playerTileIndex] = gameState.players[otherPlayer].tiles[otherTileIndex];
-  gameState.players[otherPlayer].tiles[otherTileIndex] = temp;
-  
-  addMessage(`Player ${currentPlayer + 1} swapped a tile with Player ${otherPlayer + 1}`);
-  
-  // Exit swap mode
+// Updated swapTiles function to handle indices and player indices for both tiles
+function swapTiles(index1, playerIndex1, index2, playerIndex2) {
+  // Ensure we are not swapping with the same player (should be caught in mousePressed, but double-check)
+  if (playerIndex1 === playerIndex2) {
+      console.error("Attempted to swap tiles within the same player's hand.");
+      // Reset swap state just in case
+      gameState.swapMode = false;
+      gameState.swapTileIndex = -1;
+      gameState.swapPlayerIndex = -1;
+      return;
+  }
+
+  // Get references to the player hands
+  let hand1 = gameState.players[playerIndex1].tiles;
+  let hand2 = gameState.players[playerIndex2].tiles;
+
+  // Check if indices are valid
+  if (index1 < 0 || index1 >= hand1.length || index2 < 0 || index2 >= hand2.length) {
+      console.error("Invalid tile index during swap.");
+      // Reset swap state
+      gameState.swapMode = false;
+      gameState.swapTileIndex = -1;
+      gameState.swapPlayerIndex = -1;
+      return;
+  }
+
+  // Perform the swap
+  let temp = hand1[index1];
+  hand1[index1] = hand2[index2];
+  hand2[index2] = temp;
+
+  let messagePlayer1 = playerIndex1 + 1;
+  let messagePlayer2 = playerIndex2 + 1;
+  addMessage(`Player ${messagePlayer1} swapped a tile with Player ${messagePlayer2}`);
+
+  // Exit swap mode and reset selection state
   gameState.swapMode = false;
   gameState.swapTileIndex = -1;
   gameState.swapPlayerIndex = -1;
