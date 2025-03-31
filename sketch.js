@@ -35,7 +35,7 @@ let gameState = {
   soloMode: false,
   useWindmillsExpansion: false,
   usePiersExpansion: false,
-  scoreEnclosedIslands: true,
+  scoreEnclosedIslands: false,
   selectingTileToKeep: false,
   touchStartPos: null,
   viewX: 0,
@@ -171,7 +171,7 @@ function createGameAssets() {
 function initializeTileTypes() {
   // Create tile types based on the rules
   
-  // Format: { id, hasLighthouse, hasBeacon, hasWindmill, isOpenOcean, hasPier, edges: [top, right, bottom, left] }
+  // Format: { id, hasLighthouse, hasBeacon, hasWindmill, isOpenOcean, hasPier, hasHouses, edges: [top, right, bottom, left] }
   // Edge: 0 = water, 1 = land
   
   // Create the Beacon HQ tile
@@ -182,6 +182,7 @@ function initializeTileTypes() {
     hasWindmill: false,
     isOpenOcean: true, 
     hasPier: false,
+    hasHouses: 0,
     edges: [0, 0, 0, 0],  // All water edges
     x: 0, 
     y: 0,
@@ -191,101 +192,101 @@ function initializeTileTypes() {
   let tileConfigs = [
     
     // Open ocean tiles (all water edges)
-    { id: 1, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 2, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 3, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 4, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 5, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 6, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 1, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 2, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 3, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 4, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 5, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 6, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
 
     // Beacons
-    { id: 7, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 8, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 9, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 10, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 11, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 12, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 7, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 8, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 9, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 10, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 11, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 12, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
 
     // Windmills
-    { id: 13, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 14, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 15, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 16, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
-    { id: 17, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, edges: [0, 0, 0, 0] },
+    { id: 13, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 14, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 15, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 16, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
+    { id: 17, hasLighthouse: false, hasBeacon: false, hasWindmill: true, isOpenOcean: true, hasPier: false, hasHouses:0, edges: [0, 0, 0, 0] },
 
     // Bottom edge
-    { id: 18, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
-    { id: 19, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
-    { id: 20, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
-    { id: 21, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
-    { id: 22, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 0] },
+    { id: 18, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [0, 0, 1, 0] },
+    { id: 19, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:2, edges: [0, 0, 1, 0] },
+    { id: 20, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 0, 1, 0] },
+    { id: 21, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [0, 0, 1, 0] },
+    { id: 22, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 0, 1, 0] },
 
     // Top edge
-    { id: 23, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
-    { id: 24, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
-    { id: 25, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
-    { id: 26, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
-    { id: 27, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 0] },
+    { id: 23, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [1, 0, 0, 0] },
+    { id: 24, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:2, edges: [1, 0, 0, 0] },
+    { id: 25, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [1, 0, 0, 0] },
+    { id: 26, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [1, 0, 0, 0] },
+    { id: 27, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [1, 0, 0, 0] },
 
     // Right edge
-    { id: 28, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
-    { id: 29, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
-    { id: 30, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
-    { id: 31, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
-    { id: 32, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 0] },
+    { id: 28, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [0, 1, 0, 0] },
+    { id: 29, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:2, edges: [0, 1, 0, 0] },
+    { id: 30, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 1, 0, 0] },
+    { id: 31, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [0, 1, 0, 0] },
+    { id: 32, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 1, 0, 0] },
 
     // Left edge
-    { id: 33, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
-    { id: 34, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
-    { id: 35, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
-    { id: 36, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
-    { id: 37, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 0, 1] },
+    { id: 33, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [0, 0, 0, 1] },
+    { id: 34, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:2, edges: [0, 0, 0, 1] },
+    { id: 35, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 0, 0, 1] },
+    { id: 36, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [0, 0, 0, 1] },
+    { id: 37, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 0, 0, 1] },
 
     // Top and bottom edge
-    { id: 38, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
-    { id: 39, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
-    { id: 40, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 0] },
+    { id: 38, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [1, 0, 1, 0] },
+    { id: 39, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [1, 0, 1, 0] },
+    { id: 40, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [1, 0, 1, 0] },
 
     // Left and right edge
-    { id: 41, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
-    { id: 42, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
-    { id: 43, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 0, 1] },
+    { id: 41, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 1, 0, 1] },
+    { id: 42, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [0, 1, 0, 1] },
+    { id: 43, hasLighthouse: false, hasBeacon: true, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 1, 0, 1] },
 
     // Right and bottom edge
-    { id: 44, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
-    { id: 45, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 0] },
-    { id: 46, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, edges: [0, 1, 1, 0] },
+    { id: 44, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:2, edges: [0, 1, 1, 0] },
+    { id: 45, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [0, 1, 1, 0] },
+    { id: 46, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, hasHouses:0, edges: [0, 1, 1, 0] },
 
     // Bottom and left edge
-    { id: 47, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
-    { id: 48, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 0, 1, 1] },
-    { id: 49, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, edges: [0, 0, 1, 1] },
+    { id: 47, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [0, 0, 1, 1] },
+    { id: 48, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 0, 1, 1] },
+    { id: 49, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, hasHouses:0, edges: [0, 0, 1, 1] },
 
     // Right and top edge
-    { id: 50, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
-    { id: 51, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 0] },
-    { id: 52, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, edges: [1, 1, 0, 0] },
+    { id: 50, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [1, 1, 0, 0] },
+    { id: 51, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [1, 1, 0, 0] },
+    { id: 52, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, hasHouses:0,edges: [1, 1, 0, 0] },
 
     // Top and left edge
-    { id: 53, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 54, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 0, 1] },
-    { id: 55, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, edges: [1, 0, 0, 1] },
+    { id: 53, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [1, 0, 0, 1] },
+    { id: 54, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [1, 0, 0, 1] },
+    { id: 55, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: true, hasHouses:0, edges: [1, 0, 0, 1] },
 
     // Left top right
-    { id: 56, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 1] },
-    { id: 57, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 0, 1] },
+    { id: 56, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [1, 1, 0, 1] },
+    { id: 57, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1, edges: [1, 1, 0, 1] },
 
     // Right, bottom, left
-    { id: 58, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
-    { id: 59, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [0, 1, 1, 1] },
+    { id: 58, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:2, edges: [0, 1, 1, 1] },
+    { id: 59, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0, edges: [0, 1, 1, 1] },
 
     // Top, bottom, left
-    { id: 60, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 1] },
-    { id: 61, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 0, 1, 1] },
+    { id: 60, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1,edges: [1, 0, 1, 1] },
+    { id: 61, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1,edges: [1, 0, 1, 1] },
 
     // Top, bottom, right
-    { id: 62, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] },
-    { id: 63, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, edges: [1, 1, 1, 0] }
+    { id: 62, hasLighthouse: false, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:1,edges: [1, 1, 1, 0] },
+    { id: 63, hasLighthouse: true, hasBeacon: false, hasWindmill: false, isOpenOcean: false, hasPier: false, hasHouses:0,edges: [1, 1, 1, 0] }
   ];
   
   // Add all tile types to the game state
@@ -546,7 +547,7 @@ if (gameState.scoreEnclosedIslands) {
 fill(255);
 textSize(24);
 textAlign(LEFT, CENTER); // Make sure text aligns correctly
-text("Score Islands", scoreIslandsCheckboxX + checkboxSize + spacing, scoreIslandsCheckboxY + checkboxSize / 2);
+text("Island Expansion", scoreIslandsCheckboxX + checkboxSize + spacing, scoreIslandsCheckboxY + checkboxSize / 2);
 currentY += buttonHeight + spacing * 2; // Extra spacing before start buttons
 
 
@@ -760,7 +761,10 @@ function drawOpenOceanWaves(tileSize) {
 
 function drawSpecialFeatures(tile, rotatedEdges, x, y, tileSize) {
     push();
+    // Translate origin to the CENTER of the tile for easier relative calculations
     translate(x + tileSize / 2, y + tileSize / 2);
+
+    // Draw other features relative to the center
     if (tile.hasLighthouse) {
         drawLighthouse(tile, rotatedEdges, tileSize);
     } else if (tile.hasBeacon) {
@@ -769,7 +773,90 @@ function drawSpecialFeatures(tile, rotatedEdges, x, y, tileSize) {
     if (tile.hasPier) {
         drawPier(tile, rotatedEdges, tileSize);
     }
-    pop();
+
+    // --- Draw Houses (Revised Logic v2) ---
+    // Check if the tile *type* has houses and if *any* edge is land
+    if (tile.hasHouses > 0 && rotatedEdges.includes(1)) {
+        let houseCount = tile.hasHouses;
+        let baseHouseSize = tileSize * 0.15; // Keep size relatively small
+
+        // Find indices of land edges [0: top, 1: right, 2: bottom, 3: left]
+        let landEdgeIndices = [];
+        for (let j = 0; j < 4; j++) {
+            if (rotatedEdges[j] === 1) {
+                landEdgeIndices.push(j);
+            }
+        }
+
+        // Only proceed if there are actual land edges
+        if (landEdgeIndices.length > 0) {
+            let seedBase = tile.id !== undefined ? tile.id * 5 : (tile.x || 0) * 31 + (tile.y || 0) * 17;
+
+            for (let i = 0; i < houseCount; i++) {
+                randomSeed(seedBase + i * 123); // Seed randomness for this specific house
+
+                // 1. Choose a random land edge as an anchor
+                let chosenEdgeIndex = random(landEdgeIndices);
+
+                // 2. Determine base position: center of the chosen edge RELATIVE TO TILE CENTER (0,0)
+                let edgeCenterX = 0;
+                let edgeCenterY = 0;
+                // Note: tileSize/2 represents the distance from center to edge
+                if (chosenEdgeIndex === 0) edgeCenterY = -tileSize / 2; // Top edge center Y
+                else if (chosenEdgeIndex === 1) edgeCenterX = tileSize / 2;  // Right edge center X
+                else if (chosenEdgeIndex === 2) edgeCenterY = tileSize / 2;  // Bottom edge center Y
+                else if (chosenEdgeIndex === 3) edgeCenterX = -tileSize / 2; // Left edge center X
+
+                // 3. Calculate offset INWARDS from the edge center (towards tile center)
+                // Ensure house is slightly away from the absolute edge
+                let inwardDist = random(baseHouseSize * 0.7, tileSize * 0.25); // How far from edge center
+                let offsetX = 0;
+                let offsetY = 0;
+                if (chosenEdgeIndex === 0) offsetY = inwardDist;        // Move down from top edge
+                else if (chosenEdgeIndex === 1) offsetX = -inwardDist;   // Move left from right edge
+                else if (chosenEdgeIndex === 2) offsetY = -inwardDist;   // Move up from bottom edge
+                else if (chosenEdgeIndex === 3) offsetX = inwardDist;    // Move right from left edge
+
+                // 4. Calculate offset TANGENT to the edge (along the coastline) RELATIVE TO EDGE CENTER
+                let tangentDist = random(-tileSize * 0.3, tileSize * 0.3); // Sideways variation
+                let perpOffsetX = 0;
+                let perpOffsetY = 0;
+                if (chosenEdgeIndex === 0 || chosenEdgeIndex === 2) { // Top or Bottom edge
+                    perpOffsetX = tangentDist; // Move left/right along the edge
+                } else { // Right or Left edge
+                    perpOffsetY = tangentDist; // Move up/down along the edge
+                }
+
+                // 5. Combine edge center and offsets to get final position RELATIVE TO TILE CENTER (0,0)
+                // This is the coordinate where the hut should be centered.
+                let finalHouseCenterX = edgeCenterX + offsetX + perpOffsetX;
+                let finalHouseCenterY = edgeCenterY + offsetY + perpOffsetY;
+
+                // 6. Add size variation
+                let houseSize = baseHouseSize * random(0.9, 1.15);
+
+                // 7. Constrain the final CENTER position to prevent drawing off the tile
+                // Coordinates are relative to tile center, so bounds are +/- tileSize/2
+                // We need to account for half the house size extending beyond its center.
+                let halfDrawSize = houseSize * 0.65; // Use a slightly generous half-size based on visual extent
+                let maxCoord = tileSize / 2 - halfDrawSize; // Max distance from center
+                let minCoord = -tileSize / 2 + halfDrawSize; // Min distance from center (most negative)
+
+                finalHouseCenterX = constrain(finalHouseCenterX, minCoord, maxCoord);
+                finalHouseCenterY = constrain(finalHouseCenterY, minCoord, maxCoord);
+
+                // 8. Draw the hut using coordinates relative to the tile center.
+                // drawCoastalHut will translate to this (finalHouseCenterX, finalHouseCenterY) point
+                // relative to the current origin (which *is* the tile center) and draw the hut.
+                drawCoastalHut(finalHouseCenterX, finalHouseCenterY, houseSize, i);
+
+                randomSeed(); // Reset random seed
+            }
+        }
+    }
+    // --- End House Drawing ---
+
+    pop(); // Restore drawing context from the initial translate()
 }
 
 function drawLighthouse(tile, rotatedEdges, tileSize) {
@@ -840,6 +927,52 @@ function drawPier(tile, rotatedEdges, tileSize) {
     }
 }
 
+function drawCoastalHut(x, y, size, variationSeed) {
+    push(); // Isolate hut drawing styles and transforms
+    translate(x, y); // Move to the hut's calculated center position
+
+    // Use variationSeed (e.g., index in the loop) for consistent variety per hut
+    randomSeed(variationSeed * 101 + (gameState.placedTiles[x+','+y]?.id || 0)); // Seed based on index and tile ID
+
+    // Rotate slightly for variation?
+    rotate(random(-0.15, 0.15));
+
+    // Coastal Colors
+    let roofColor = color(random(170, 210), random(150, 180), random(90, 120)); // Thatched yellow/brown
+    let wallColor = color(random(200, 235), random(190, 225), random(170, 200)); // Weathered wood/white wash
+    let doorColor = color(random(70, 110), random(90, 130), random(130, 170)); // Faded blue/green door
+
+    // Hut structure
+    fill(wallColor);
+    stroke(140, 120, 100); // Light brown outline
+    strokeWeight(max(1, size * 0.05)); // Scale stroke weight slightly
+    rect(-size / 2, -size * 0.3, size, size * 0.8, size * 0.1); // Slightly taller walls, rounded corners
+
+    // Thatched Roof (triangle)
+    fill(roofColor);
+    noStroke(); // Roof has no hard stroke
+    beginShape();
+    vertex(-size * 0.65, -size * 0.3); // Wider eaves
+    vertex(size * 0.65, -size * 0.3);
+    vertex(0, -size * 1.0); // Peak
+    endShape(CLOSE);
+    // Add some texture lines to roof
+    stroke(red(roofColor)*0.7, green(roofColor)*0.7, blue(roofColor)*0.7, 180); // Darker thatch color, semi-transparent
+    strokeWeight(max(1, size * 0.04));
+    for(let i = 0; i < 4; i++){
+       let startX = random(-size * 0.5, size * 0.5);
+       line(startX, -size*0.35, lerp(startX, 0, 0.7), -size * 0.9); // Lines towards peak
+    }
+
+    // Simple Door
+    fill(doorColor);
+    noStroke();
+    rect(-size * 0.15, size * 0.05, size * 0.3, size * 0.4, size * 0.05); // Centered door, slightly rounded
+
+    pop(); // Restore styles and transforms
+    randomSeed(); // Reset seed
+}
+
 function drawPointsValue(tile, x, y, tileSize) {
     if (tile.x !== undefined && tile.y !== undefined) {
         let points = calculatePoints(tile);
@@ -873,6 +1006,15 @@ function calculatePoints(tile) {
         if (tile.hasBeacon) points += 1;
         if (tile.hasWindmill) {
             points += calculateWindmillBonus(tile);
+        }
+
+                if (tile.hasPier && gameState.usePiersExpansion) {
+
+            // Find connected landmass and count buildings
+            let buildingsOnLandmass = countBuildingsOnConnectedLandmass(tile.x, tile.y);
+            points += buildingsOnLandmass; // Add points for buildings
+            // Optional: Log the pier bonus
+             // console.log(`Pier at (${tile.x},${tile.y}) scores ${1 + buildingsOnLandmass} points (1 + ${buildingsOnLandmass} buildings)`);
         }
     }
 
@@ -2365,4 +2507,70 @@ function getDirection(fromX, fromY, toX, toY) {
   if (toY === fromY + 1) return 2;      // bottom
   if (toX === fromX - 1) return 3;      // left
   return -1;
+}
+
+/**
+ * Performs a Breadth-First Search starting from a given tile (presumably a Pier)
+ * to find all connected land tiles (tiles connected via land-to-land edges)
+ * and returns the total number of houses ('hasHouses') on those tiles.
+ *
+ * @param {number} startX The starting tile's X coordinate.
+ * @param {number} startY The starting tile's Y coordinate.
+ * @returns {number} The total number of houses on the connected landmass.
+ */
+function countBuildingsOnConnectedLandmass(startX, startY) {
+    let buildingCount = 0;
+    const queue = []; // Queue for BFS: [[x, y], ...]
+    const visited = new Set(); // Keep track of visited tile keys: "x,y"
+
+    const startKey = `${startX},${startY}`;
+    const startTile = gameState.placedTiles[startKey];
+
+    // Should not happen if called from calculatePoints after isFullyExplored, but safety check
+    if (!startTile) {
+        console.error(`countBuildingsOnConnectedLandmass: Start tile at (${startX},${startY}) not found.`);
+        return 0;
+    }
+
+    // Start the search from the initial tile
+    queue.push([startX, startY]);
+    visited.add(startKey);
+    buildingCount += startTile.hasHouses; // Count houses on the starting tile itself (piers have 0, but robust)
+
+    // Directions remain the same as defined globally
+    // const DIRECTIONS = [ {dx: 0, dy: -1, edge: 0, opposite: 2}, ... ];
+
+    while (queue.length > 0) {
+        const [currentX, currentY] = queue.shift(); // Dequeue the next tile to explore
+        const currentKey = `${currentX},${currentY}`;
+        const currentTile = gameState.placedTiles[currentKey];
+
+        // Should exist if it was added to queue, but check again
+        if (!currentTile) continue;
+
+        const currentRotatedEdges = rotateEdges(currentTile.edges, currentTile.rotation || 0);
+
+        // Explore neighbours
+        for (const dir of DIRECTIONS) {
+            const adjX = currentX + dir.dx;
+            const adjY = currentY + dir.dy;
+            const adjKey = `${adjX},${adjY}`;
+
+            // Check if neighbour exists and hasn't been visited yet in this search
+            if (gameState.placedTiles[adjKey] && !visited.has(adjKey)) {
+                const adjTile = gameState.placedTiles[adjKey];
+                const adjRotatedEdges = rotateEdges(adjTile.edges, adjTile.rotation || 0);
+
+                // --- Check for LAND-to-LAND connection ---
+                if (currentRotatedEdges[dir.edge] === 1 && adjRotatedEdges[dir.opposite] === 1) {
+                    // Found a connected land tile!
+                    visited.add(adjKey); // Mark as visited for this search
+                    queue.push([adjX, adjY]); // Add to queue for further exploration
+                    buildingCount += adjTile.hasHouses; // Add its houses to the total
+                }
+            }
+        }
+    }
+
+    return buildingCount;
 }
