@@ -2130,125 +2130,190 @@ function isFullyExplored(x, y) {
 
 // Add these functions to handle touch events
 
+/**
+ * Handles the start of a touch event.
+ * Records the start position and triggers mousePressed to handle tap interactions.
+ * Determines if the tap point resulted in a UI interaction.
+ * Does NOT initiate panning here.
+ */
 function touchStarted() {
-    // Make sure we have touches before accessing them
-    if (touches.length === 0) return false; // Exit if no touch data
+    // Ensure touch data is available
+    if (touches.length === 0) return false;
 
-    // Update mouseX/mouseY from the first touch for mousePressed logic
+    // Update mouse coordinates for p5 functions that use them (like mousePressed)
     mouseX = touches[0].x;
     mouseY = touches[0].y;
-    gameState.touchStartPos = { x: mouseX, y: mouseY }; // Store initial touch position
 
-    // Immediately call mousePressed() to handle UI checks (buttons, tiles, ship)
-    // mousePressed will return false if it handled an action.
-    // We don't store the return value directly, but check game state changes *after* it runs.
-    mousePressed();
+    // Store the initial touch position and add a flag to track interaction
+    // We reset interaction to false initially for each new touch.
+    gameState.touchStartPos = { x: mouseX, y: mouseY, interaction: false };
 
-    // --- Decide whether to start panning ---
-    // Check if mousePressed resulted in an action (dragging, mode change)
-    let actionTaken = gameState.draggedTile ||
-                      gameState.movementMode ||
-                      gameState.swapMode ||
-                      gameState.discardMode ||
-                      gameState.selectingTileToKeep ||
-                      gameState.showInstructions; // Consider toggling instructions an action
+    // Clear any lingering panning state from previous gestures (safety)
+    gameState.isPanning = false;
+    // Also clear view transition flag - a new touch should interrupt transitions unless mousePressed starts one
+    // gameState.isViewTransitioning = false; // Let mousePressed/centerView handle this
 
-    // Start panning ONLY if no specific game action was initiated by mousePressed
-    if (!actionTaken && gameState.gameStarted) { // Also ensure game is started before allowing panning
-        // Check if we are NOT currently panning (safety check)
-        if (!gameState.isPanning) {
-            gameState.isPanning = true;
-            gameState.panStartX = mouseX;
-            gameState.panStartY = mouseY;
-            gameState.panStartViewX = gameState.viewX; // Store current view center
-            gameState.panStartViewY = gameState.viewY;
-            gameState.isViewTransitioning = false; // Stop any auto-centering
-            console.log("Panning started (touch - decided after mousePressed)");
-        }
-    } else {
-        // If an action *was* taken by mousePressed, ensure panning is off
-        gameState.isPanning = false;
+    // --- Call mousePressed to handle tap actions ---
+    // Store state *before* calling mousePressed to detect changes
+    let stateBefore = {
+        draggedTile: gameState.draggedTile,
+        movementMode: gameState.movementMode,
+        swapMode: gameState.swapMode,
+        discardMode: gameState.discardMode,
+        selectingTileToKeep: gameState.selectingTileToKeep,
+        showInstructions: gameState.showInstructions
+        // Add any other boolean state flags set by mousePressed interactions if needed
+    };
+
+    mousePressed(); // Let mousePressed determine if the tap hit a button, tile, ship etc.
+
+    // --- Check if mousePressed resulted in an interaction ---
+    // Compare state after mousePressed with the state before
+    let interactionOccurred = (
+        (gameState.draggedTile !== null && stateBefore.draggedTile === null) || // Started dragging?
+        (gameState.movementMode && !stateBefore.movementMode) ||           // Entered movement mode?
+        (gameState.swapMode && !stateBefore.swapMode) ||                   // Entered swap mode?
+        (gameState.discardMode && !stateBefore.discardMode) ||             // Entered discard mode?
+        (gameState.selectingTileToKeep && !stateBefore.selectingTileToKeep) || // Entered keep selection?
+        (gameState.showInstructions !== stateBefore.showInstructions)        // Toggled instructions?
+        // Add checks if modes can be *cancelled* by click, e.g. (!gameState.movementMode && stateBefore.movementMode)
+    );
+
+    // Store the interaction result on the touchStartPos object.
+    // This is used by touchMoved to decide if panning is allowed.
+    if (gameState.touchStartPos) { // Check touchStartPos hasn't been cleared by a rapid touchEnd
+      gameState.touchStartPos.interaction = interactionOccurred;
+      // console.log(`Mobile touchStarted: interactionOccurred = ${interactionOccurred}`); // Keep for potential future debug
     }
-    // --- End Panning Decision ---
 
-
-    // Prevent default browser actions like scrolling/zooming
-    return false;
+    // Panning initiation is deferred to touchMoved.
+    return false; // Prevent default browser actions (scrolling, zooming)
 }
 
+/**
+ * Handles touch movement.
+ * Initiates panning if the finger moves sufficiently *and* the initial touch didn't interact with UI.
+ * Updates the view if panning is active.
+ * Updates visual position if dragging a tile.
+ */
 function touchMoved() {
-    if (touches.length === 0 || !gameState.touchStartPos) return false; // Need touch data and start pos
+    // Ensure touch data and start position are available
+    if (touches.length === 0 || !gameState.touchStartPos) return false;
 
-    // Update mouseX/mouseY for consistency if needed elsewhere (like draw())
+    // Update mouse coordinates continuously
     mouseX = touches[0].x;
     mouseY = touches[0].y;
 
-    // --- PANNING LOGIC (Touch) ---
-    // If panning was started in touchStarted, update the view
+    // --- Initiate Panning (if conditions met) ---
+    // Check if:
+    // 1. Not already panning.
+    // 2. touchStartPos exists (gesture hasn't ended).
+    // 3. The initial touch in touchStarted *did not* result in an interaction.
+    if (!gameState.isPanning && gameState.touchStartPos && !gameState.touchStartPos.interaction) {
+        // Add a small pixel threshold to prevent panning on slight movements during a tap
+        let moveThreshold = 10;
+        let dx = Math.abs(mouseX - gameState.touchStartPos.x);
+        let dy = Math.abs(mouseY - gameState.touchStartPos.y);
+
+        // Check if movement exceeds threshold
+        if (dx > moveThreshold || dy > moveThreshold) {
+            // Check if the game is actually running (don't pan on intro screen)
+            if (gameState.gameStarted) {
+                gameState.isPanning = true;
+                // Use the *original* start coordinates for calculating view offset later
+                gameState.panStartX = gameState.touchStartPos.x;
+                gameState.panStartY = gameState.touchStartPos.y;
+                gameState.panStartViewX = gameState.viewX; // Capture view state at pan start
+                gameState.panStartViewY = gameState.viewY;
+                gameState.isViewTransitioning = false; // Stop any automatic centering
+                // console.log("Mobile: Panning started on touchMove"); // Keep for potential debug
+            }
+        }
+    }
+    // --- End Panning Initiation ---
+
+
+    // --- Update View (if currently panning) ---
     if (gameState.isPanning) {
+        // Calculate the total drag distance from the pan's starting screen position
         let deltaX = mouseX - gameState.panStartX;
         let deltaY = mouseY - gameState.panStartY;
 
-        // Convert screen pixel delta to grid coordinate delta
+        // Update the view coordinates based on the drag delta and tile size
+        // Dragging right (positive deltaX) moves the view left (negative viewX change)
         gameState.viewX = gameState.panStartViewX - deltaX / gameState.tileSize;
         gameState.viewY = gameState.panStartViewY - deltaY / gameState.tileSize;
 
-        // Keep target synced
+        // Keep the target view synced during manual panning to prevent snapping back
         gameState.targetViewX = gameState.viewX;
         gameState.targetViewY = gameState.viewY;
 
-        // console.log(`Touch Panning: view=(${gameState.viewX.toFixed(2)}, ${gameState.viewY.toFixed(2)})`);
-        return false; // Prevent scrolling and other actions
+        return false; // Prevent default browser scrolling while panning
     }
-    // --- END PANNING LOGIC ---
+    // --- End View Update ---
 
-    // If we have a dragged tile (started via touch -> mousePressed -> drag start)
-    // The tile follows the touch position visually via the main draw() loop
-    // using the updated mouseX/mouseY. No specific action needed here unless
-    // you add complex drag effects.
+
+    // --- Update Dragged Tile Visual ---
+    // If dragging a tile (state set by mousePressed via touchStarted)
     if (gameState.draggedTile) {
-        // mouseDragged(); // Only call if mouseDragged has specific logic for tile dragging itself
-        return false; // Prevent default scrolling
+        // The draw() function uses mouseX/mouseY to position the dragged tile,
+        // so simply updating mouseX/mouseY above is enough for the visual.
+        return false; // Prevent default browser scrolling while dragging a tile
     }
 
-    return false; // Prevent default scrolling/zooming if not panning or dragging
+    // If not panning or dragging a tile, still prevent default actions
+    return false;
 }
 
+/**
+ * Handles the end of a touch event.
+ * Stops panning if active.
+ * Triggers mouseReleased if a tile drag was in progress.
+ * Cleans up touch-specific state.
+ */
 function touchEnded() {
-    // --- PANNING LOGIC ---
-    // If panning was active, stop it.
+    // --- Stop Panning ---
     if (gameState.isPanning) {
         gameState.isPanning = false;
-        gameState.touchStartPos = null; // Clear touch start position
-        console.log("Panning stopped (touch end)");
-        // Don't call mouseReleased here, panning was its own action.
-        return false; // Prevent potential clicks from registering after pan
+        // console.log("Mobile: Panning stopped (touch end)"); // Keep for potential debug
+        // Clear touch position info - the pan gesture is complete.
+        gameState.touchStartPos = null;
+        // Do not proceed further; the action was panning.
+        return false;
     }
-    // --- END PANNING LOGIC ---
+    // --- End Stop Panning ---
 
-    // If we weren't panning, but a touch sequence occurred...
-    if (gameState.touchStartPos) {
-        // Check if we were dragging a tile (initiated by touchStarted -> mousePressed)
+
+    // --- Handle End of Drag or Tap ---
+    // Check if touchStartPos exists (meaning touchStarted fired and wasn't immediately followed by touchEnd clearing it)
+    // and we weren't panning.
+    if (gameState.touchStartPos && !gameState.isPanning) {
+
+        // A. End of Tile Drag
+        // Check if a tile drag was in progress (state set by touchStarted->mousePressed)
         if (gameState.draggedTile) {
-            // Use mouseReleased logic to handle tile placement/cancellation.
-            // mouseReleased uses the last known mouseX/mouseY.
-            console.log("Touch calling mouseReleased for tile drop");
-            mouseReleased(); // Handles placement, state reset, view centering
-        } else {
-             // If it wasn't a pan and wasn't a drag, it was a tap.
-             // The action for the tap (button press, ship select) was handled
-             // in mousePressed (called by touchStarted). Nothing more needed here usually.
-             // console.log("Tap ended (no drag, no pan)");
+            // console.log("Mobile: Touch calling mouseReleased for tile drop"); // Keep for potential debug
+            // Let mouseReleased handle the placement logic, state cleanup, and view centering
+            mouseReleased();
+        }
+        // B. End of Tap
+        // Else: This was the end of a tap. The tap's action (button press, ship select etc.)
+        // was already fully handled by the mousePressed() call within touchStarted.
+        // No further action needed here for the tap itself. Subsequent state like view centering
+        // (triggered by endTurn called from mousePressed) should proceed normally.
+        else {
+           // console.log("Mobile: Tap gesture ended."); // Keep for potential debug
         }
 
-        // Reset touch state variables
+        // --- Reset Touch State ---
+        // Clear the touch start position info now that the gesture is complete.
         gameState.touchStartPos = null;
     }
 
-    // Ensure panning is definitely off (safety net)
+    // Final safety net: ensure panning is off if touchEnd somehow happens without touchStartPos
     gameState.isPanning = false;
 
-    return false; // Prevent default behavior
+    return false; // Prevent default browser behavior (like potential simulated clicks)
 }
 
 // Add new animation update function
