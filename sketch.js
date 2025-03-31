@@ -1203,324 +1203,362 @@ function highlightValidPlacements() {
   }
 }
 
+/**
+ * Handles mouse press events. Determines the action based on game state,
+ * mouse position, and button pressed. Actions include interacting with UI
+ * (intro screen, game buttons, instructions), starting panning (right-click),
+ * selecting the ship, initiating tile drag, selecting tiles for discard/swap/keep.
+ * Returns false to prevent default browser actions.
+ */
 function mousePressed() {
     // Always prevent default context menu on right click if game is running
+    // to allow for right-click panning without the menu appearing.
     if (gameState.gameStarted && mouseButton === RIGHT) {
-        document.oncontextmenu = function() { return false; }
+        document.oncontextmenu = function() { return false; } // Disable context menu
     }
 
-    // Check instructions button first (top-left)
-    // Ensure this button works even before the game starts
+    // 1. Check Instructions Button (visible anytime)
+    // Coordinates and dimensions need to roughly match the button created in setup()
     let instructionsButtonX = 10;
     let instructionsButtonY = 10;
-    let instructionsButtonW = 100; // Width derived from createButton text
-    let instructionsButtonH = 20;  // Approximate height based on default button
+    let instructionsButtonW = 100; // Estimate width based on 'Instructions' text
+    let instructionsButtonH = 20;  // Default p5 button height approximation
     if (mouseX >= instructionsButtonX && mouseX <= instructionsButtonX + instructionsButtonW &&
         mouseY >= instructionsButtonY && mouseY <= instructionsButtonY + instructionsButtonH) {
-        gameState.showInstructions = !gameState.showInstructions;
+        gameState.showInstructions = !gameState.showInstructions; // Toggle visibility
+        // This state change is checked by touchStarted to prevent panning if instructions were toggled.
         return false; // Action handled, prevent defaults
     }
 
-    // Handle Intro Screen interactions
+    // 2. Handle Intro Screen Interactions (if game hasn't started)
     if (!gameState.gameStarted) {
-        let buttonWidth = 220;
-        let buttonHeight = 50;
+        let buttonWidth = 220; // Used for checkbox horizontal area check
+        let buttonHeight = 50; // Used for vertical spacing
         let checkboxSize = 30;
         let spacing = 20;
-        let currentY = height / 2 - buttonHeight; // Recalculate starting Y for intro elements
+        let currentY = height / 2 - buttonHeight; // Starting Y for intro UI elements
+        let checkboxPadding = 10; // Extra clickable area around checkboxes/text
 
-        // Windmills Toggle Check
+        // Windmills Expansion Toggle
         let windmillCheckboxX = width / 2 - buttonWidth / 2;
         let windmillCheckboxY = currentY;
-        if (mouseX >= windmillCheckboxX && mouseX <= windmillCheckboxX + checkboxSize + buttonWidth && // Wider click area
-            mouseY >= windmillCheckboxY && mouseY <= windmillCheckboxY + checkboxSize) {
+        if (mouseX >= windmillCheckboxX - checkboxPadding && mouseX <= windmillCheckboxX + buttonWidth + checkboxPadding &&
+            mouseY >= windmillCheckboxY - checkboxPadding && mouseY <= windmillCheckboxY + checkboxSize + checkboxPadding) {
             gameState.useWindmillsExpansion = !gameState.useWindmillsExpansion;
+            console.log("Windmill Toggle Clicked:", gameState.useWindmillsExpansion);
             return false; // Prevent other clicks
         }
         currentY += buttonHeight + spacing;
 
-        // Piers Toggle Check
+        // Piers Expansion Toggle
         let pierCheckboxX = width / 2 - buttonWidth / 2;
         let pierCheckboxY = currentY;
-         if (mouseX >= pierCheckboxX && mouseX <= pierCheckboxX + checkboxSize + buttonWidth && // Wider click area
-             mouseY >= pierCheckboxY && mouseY <= pierCheckboxY + checkboxSize) {
+         if (mouseX >= pierCheckboxX - checkboxPadding && mouseX <= pierCheckboxX + buttonWidth + checkboxPadding &&
+             mouseY >= pierCheckboxY - checkboxPadding && mouseY <= pierCheckboxY + checkboxSize + checkboxPadding) {
             gameState.usePiersExpansion = !gameState.usePiersExpansion;
+            console.log("Pier Toggle Clicked:", gameState.usePiersExpansion);
             return false; // Prevent other clicks
         }
         currentY += buttonHeight + spacing;
 
-        // Score Islands Toggle Check
+        // Score Enclosed Islands Toggle
         let scoreIslandsCheckboxX = width / 2 - buttonWidth / 2;
         let scoreIslandsCheckboxY = currentY;
-        if (mouseX >= scoreIslandsCheckboxX && mouseX <= scoreIslandsCheckboxX + checkboxSize + buttonWidth && // Wider click area
-            mouseY >= scoreIslandsCheckboxY && mouseY <= scoreIslandsCheckboxY + checkboxSize) {
+        if (mouseX >= scoreIslandsCheckboxX - checkboxPadding && mouseX <= scoreIslandsCheckboxX + buttonWidth + checkboxPadding &&
+            mouseY >= scoreIslandsCheckboxY - checkboxPadding && mouseY <= scoreIslandsCheckboxY + checkboxSize + checkboxPadding) {
             gameState.scoreEnclosedIslands = !gameState.scoreEnclosedIslands;
-            console.log("Score Islands toggled:", gameState.scoreEnclosedIslands);
+            console.log("Score Islands Toggled:", gameState.scoreEnclosedIslands);
             return false; // Prevent other clicks
         }
-        currentY += buttonHeight + spacing * 2; // Update currentY before start buttons
+        currentY += buttonHeight + spacing * 2; // Move Y position down for Start buttons
 
-        // Start Buttons Check
+        // Start Game Buttons
         let startButtonWidth = 180;
         let startButtonHeight = 60;
+        let startButtonPadding = 5; // Extra clickable area
 
-        // Check solo mode button
-        if (mouseX >= width/2 - startButtonWidth - spacing/2 &&
-            mouseX <= width/2 - spacing/2 &&
-            mouseY >= currentY &&
-            mouseY <= currentY + startButtonHeight) {
+        // Solo Mode Button
+        let soloButtonX = width/2 - startButtonWidth - spacing/2;
+        let soloButtonY = currentY;
+        if (mouseX >= soloButtonX - startButtonPadding &&
+            mouseX <= soloButtonX + startButtonWidth + startButtonPadding &&
+            mouseY >= soloButtonY - startButtonPadding &&
+            mouseY <= soloButtonY + startButtonHeight + startButtonPadding) {
+            console.log("Start Solo Clicked");
             gameState.soloMode = true;
             gameState.gameStarted = true;
-            initializeGame(); // Initialize *after* setting flags
+            initializeGame(); // Setup game state for solo mode
             return false; // Action handled
         }
 
-        // Check 2 player mode button
-        if (mouseX >= width/2 + spacing/2 &&
-            mouseX <= width/2 + startButtonWidth + spacing/2 &&
-            mouseY >= currentY &&
-            mouseY <= currentY + startButtonHeight) {
+        // 2 Player Mode Button
+        let twoPlayerButtonX = width/2 + spacing/2;
+        let twoPlayerButtonY = currentY;
+        if (mouseX >= twoPlayerButtonX - startButtonPadding &&
+            mouseX <= twoPlayerButtonX + startButtonWidth + startButtonPadding &&
+            mouseY >= twoPlayerButtonY - startButtonPadding &&
+            mouseY <= twoPlayerButtonY + startButtonHeight + startButtonPadding) {
+            console.log("Start 2 Player Clicked");
             gameState.soloMode = false;
             gameState.gameStarted = true;
-            initializeGame(); // Initialize *after* setting flags
+            initializeGame(); // Setup game state for 2-player mode
             return false; // Action handled
         }
-        // If on intro screen and no specific element was clicked, exit.
-        return false; // Prevent panning/other actions on intro screen
+
+        // If click was on intro screen but missed all interactive elements
+        console.log("Click on Intro screen missed UI elements");
+        return false; // Still prevent default browser actions
     } // End of !gameState.gameStarted block
 
-    // Handle clicks when instructions are showing (only the close button)
+    // 3. Handle Instructions Screen Close Button (if instructions are showing)
     if (gameState.showInstructions) {
         let closeButtonX = width/2 - 75;
         let closeButtonY = height - 100;
-        if (mouseX >= closeButtonX && mouseX <= closeButtonX + 150 &&
-            mouseY >= closeButtonY && mouseY <= closeButtonY + 50) {
-          gameState.showInstructions = false;
+        let closeButtonW = 150;
+        let closeButtonH = 50;
+        if (mouseX >= closeButtonX && mouseX <= closeButtonX + closeButtonW &&
+            mouseY >= closeButtonY && mouseY <= closeButtonY + closeButtonH) {
+          gameState.showInstructions = false; // Close the instructions overlay
+          // This state change is noted by touchStarted logic.
           return false; // Action handled
         }
-        // Ignore other clicks when instructions are up
+        // Ignore clicks elsewhere if instructions are showing
         return false;
     }
 
-    // Handle clicks during Game Over (only the restart button)
+    // 4. Handle Game Over Screen Restart Button (if game is over)
     if (gameState.gameOver) {
-        let buttonX = width/2 - 75;
-        let buttonY = height/2 + 100;
-        if (mouseX >= buttonX && mouseX <= buttonX + 150 &&
-            mouseY >= buttonY && mouseY <= buttonY + 50) {
-          // Reset game state and return to intro screen
+        let restartButtonX = width/2 - 75;
+        let restartButtonY = height/2 + 100;
+        let restartButtonW = 150;
+        let restartButtonH = 50;
+        if (mouseX >= restartButtonX && mouseX <= restartButtonX + restartButtonW &&
+            mouseY >= restartButtonY && mouseY <= restartButtonY + restartButtonH) {
+          // Reset flags to return to the intro screen
           gameState.gameStarted = false;
           gameState.gameOver = false;
-          // Reset view position for the intro screen maybe?
+          // Reset view to default for intro screen consistency
           gameState.viewX = 0;
           gameState.viewY = 0;
           gameState.targetViewX = 0;
           gameState.targetViewY = 0;
           return false; // Action handled
         }
-        // Ignore other clicks during game over
+        // Ignore clicks elsewhere during game over
         return false;
     }
 
-    // --- PANNING LOGIC (Right Mouse Button) ---
-    // Check if *nothing* else is active (no tile drag, no special modes)
-    let canStartPanning = !gameState.draggedTile &&
-                          !gameState.movementMode &&
-                          !gameState.swapMode &&
-                          !gameState.discardMode &&
-                          !gameState.selectingTileToKeep;
+    // --- Game Active Logic ---
 
-    if (mouseButton === RIGHT && canStartPanning) {
+    // 5. Initiate Panning (Right Mouse Button ONLY)
+    // Check if conditions are met: Right button pressed AND no other modal action is active.
+    let canStartRightClickPanning = !gameState.draggedTile &&
+                                  !gameState.movementMode &&
+                                  !gameState.swapMode &&
+                                  !gameState.discardMode &&
+                                  !gameState.selectingTileToKeep;
+
+    if (mouseButton === RIGHT && canStartRightClickPanning) {
         gameState.isPanning = true;
         gameState.panStartX = mouseX;
         gameState.panStartY = mouseY;
-        gameState.panStartViewX = gameState.viewX; // Store current view center
+        gameState.panStartViewX = gameState.viewX; // Store view state at pan start
         gameState.panStartViewY = gameState.viewY;
-        gameState.isViewTransitioning = false; // Stop any auto-centering
+        gameState.isViewTransitioning = false; // Stop any automatic camera movement
         console.log("Panning started (right mouse)");
-        return false; // Prevent any other mousePressed actions
+        return false; // Prevent any other mousePressed actions (like context menu)
     }
-    // --- END PANNING LOGIC ---
+    // Note: Left-click/touch panning initiation is handled in touchStarted *after* this function runs.
 
-    // If left-clicking or panning didn't trigger... Proceed with game actions
-
-    // Handle Action Buttons (End Turn, Swap, Discard)
+    // 6. Handle In-Game Action Buttons (Top Right Area)
+    // These actions should only trigger on LEFT click or TOUCH (handled implicitly as not RIGHT).
     let buttonY = 50;
     let buttonWidth = 100;
     let buttonHeight = 40;
     let buttonSpacing = buttonWidth + 20;
-    let actionButtonStartX = width - buttonWidth * 3 - 60; // Renamed startX
+    let actionButtonStartX = width - buttonWidth * 3 - 60; // Start X for the button group
 
-    // End Turn button
+    // End Turn Button
     if (mouseX >= actionButtonStartX && mouseX <= actionButtonStartX + buttonWidth &&
         mouseY >= buttonY && mouseY <= buttonY + buttonHeight && mouseButton !== RIGHT) {
       if (gameState.soloMode && gameState.players[0].tiles.length > 1 && !gameState.selectingTileToKeep) {
+        // Start the process of selecting a tile to keep in solo mode
         addMessage("Click on the tile you want to keep");
-        gameState.selectingTileToKeep = true;
+        gameState.selectingTileToKeep = true; // Enter selection mode
       } else if (gameState.selectingTileToKeep) {
+          // Allow clicking End Turn again to cancel the 'select to keep' process
           addMessage("Selection cancelled. Click End Turn again to finish or select a tile.");
-          gameState.selectingTileToKeep = false;
+          gameState.selectingTileToKeep = false; // Exit selection mode
       } else {
-        endTurn(); // Normal end turn
+        // Proceed with normal end turn logic (or solo mode if only 0/1 tiles)
+        endTurn();
       }
+      // touchStarted checks gameState.selectingTileToKeep to prevent panning.
       return false; // Action handled
     }
 
-    // Discard for Movement button
+    // Discard Button
     if (mouseX >= actionButtonStartX + buttonSpacing * 2 && mouseX <= actionButtonStartX + buttonSpacing * 2 + buttonWidth &&
         mouseY >= buttonY && mouseY <= buttonY + buttonHeight && mouseButton !== RIGHT) {
-      toggleDiscardMode();
-      // Don't center view yet, wait for tile selection
+      toggleDiscardMode(); // Toggles discard mode on/off
+      // Don't center view here; wait for tile selection if entering mode.
+      // touchStarted checks gameState.discardMode to prevent panning.
       return false; // Action handled
     }
 
-    // Swap Tile button (only in 2-player mode)
+    // Swap Tile Button (2-Player Mode Only)
     if (!gameState.soloMode) {
       if (mouseX >= actionButtonStartX + buttonSpacing && mouseX <= actionButtonStartX + buttonSpacing + buttonWidth &&
           mouseY >= buttonY && mouseY <= buttonY + buttonHeight && mouseButton !== RIGHT) {
-        toggleSwapMode();
-         // Don't center view, just toggling mode
+        toggleSwapMode(); // Toggles swap mode on/off
+         // Don't center view; just toggling mode.
+         // touchStarted checks gameState.swapMode to prevent panning.
         return false; // Action handled
       }
     }
 
-    // --- Check for Ship click OR clicking a movement target tile ---
+    // 7. Handle Map Interactions (Ship Selection / Movement Target Click)
+    // These should only trigger on LEFT click or TOUCH.
     let clickHandledByMovement = false;
-    // Convert mouse position to grid coordinates for potential map interaction
+    // Convert mouse click screen coordinates to game grid coordinates
     let gridX = Math.floor((mouseX - width/2 + gameState.viewX * gameState.tileSize) / gameState.tileSize + 0.5);
     let gridY = Math.floor((mouseY - height/2 + gameState.viewY * gameState.tileSize) / gameState.tileSize + 0.5);
 
-    if (gameState.movementMode && mouseButton !== RIGHT) { // Can only execute move with left click
-        // If already in movement mode, check if clicking a valid target
+    // A. Clicking a Movement Target (if already in movement mode)
+    if (gameState.movementMode && mouseButton !== RIGHT) {
         if (isValidMoveTarget(gridX, gridY)) {
-            moveShip(gridX, gridY); // This also sets movementMode = false
-            // Centering happens on animation end in updateAnimations
+            moveShip(gridX, gridY); // Execute the move (starts animation)
+            // View centering happens at the *end* of the ship animation.
             clickHandledByMovement = true;
         } else {
-            // Clicking elsewhere on the map cancels movement mode
+            // Clicking somewhere invalid while in movement mode cancels it.
             gameState.movementMode = false;
             addMessage("Movement canceled.");
             clickHandledByMovement = true; // Click was processed (to cancel mode)
         }
-    } else if (!gameState.discardMode && !gameState.swapMode && !gameState.draggedTile && !gameState.isPanning && mouseButton !== RIGHT) {
-        // Check conditions: Not in other modes, not dragging, not panning, left click
-        // Check if clicking the current player's ship to INITIATE movement
+    }
+    // B. Clicking the Ship (to *initiate* movement mode)
+    // Check conditions: Not in other modes, not dragging, not panning, left click/touch.
+    else if (!gameState.discardMode && !gameState.swapMode && !gameState.draggedTile && !gameState.isPanning && mouseButton !== RIGHT) {
         let player = gameState.players[gameState.currentPlayer];
+        // Check if the player has a ship and movement tokens available
         if (player.ship && player.movementTokens > 0) {
-            // Calculate ship's screen position based on current view
+            // Calculate the ship's current position on the screen
             let shipScreenX = width/2 + (player.ship.x - gameState.viewX) * gameState.tileSize;
             let shipScreenY = height/2 + (player.ship.y - gameState.viewY) * gameState.tileSize;
+            // Check distance from click to ship center
             let clickDistance = dist(mouseX, mouseY, shipScreenX, shipScreenY);
 
-            // Check if click is within ship's radius
-            if (clickDistance < gameState.tileSize * 0.5) {
-                checkMoveTargets(); // This sets movementMode = true
-                centerViewOnCurrentShip(); // <<< CENTER VIEW on selecting ship
-                addMessage("Ship selected. Click adjacent water tile to move."); // More explicit message
-                clickHandledByMovement = true;
+            if (clickDistance < gameState.tileSize * 0.5) { // Click is within ship's radius
+                checkMoveTargets(); // Sets gameState.movementMode = true, shows highlights
+                centerViewOnCurrentShip(); // Center view immediately on selecting ship
+                addMessage("Ship selected. Click adjacent water tile to move.");
+                clickHandledByMovement = true; // Action handled (entered movement mode)
+                // touchStarted checks gameState.movementMode to prevent panning.
             }
         }
     }
-    // If click was handled by movement logic, return
+    // If click was related to ship movement (start or execute), stop further processing.
     if (clickHandledByMovement) {
-        return false; // Prevent other actions if movement handled it
+        return false;
     }
 
 
-    // --- Check if clicking on a tile in ANY player's hand ---
-    // Iterate through each player first
+    // 8. Handle Clicks on Tiles in Player Hands (Bottom Area)
+    // Iterate through all players (relevant for swap mode)
     for (let playerIndex = 0; playerIndex < gameState.players.length; playerIndex++) {
         let player = gameState.players[playerIndex];
-
-        // Calculate the starting position for THIS player's hand (matches drawPlayerUI)
         let handStartX = gameState.soloMode ?
-            width / 2 - (player.tiles.length * gameState.tileSize) / 2 : // Center in solo mode
-            (playerIndex === 0 ? gameState.tileSize : width - gameState.tileSize * (player.tiles.length + 1)); // Sides in 2-player
+            width / 2 - (player.tiles.length * gameState.tileSize) / 2 : // Centered hand in solo
+            (playerIndex === 0 ? gameState.tileSize : width - gameState.tileSize * (player.tiles.length + 1)); // Sides in 2P
 
-        // Iterate through this player's tiles
+        // Iterate through the tiles in the current player's hand
         for (let i = 0; i < player.tiles.length; i++) {
             let tile = player.tiles[i];
-            let x = handStartX + i * gameState.tileSize;
-            let y = height - gameState.tileSize * 1.4;
+            let tileX = handStartX + i * gameState.tileSize;
+            let tileY = height - gameState.tileSize * 1.4; // Y position of hand tiles
 
-            // Check if the click is within this tile's bounds
-            if (mouseX >= x && mouseX <= x + gameState.tileSize &&
-                mouseY >= y && mouseY <= y + gameState.tileSize && mouseButton !== RIGHT) { // Can only interact with tiles using left click
+            // Check if the click is within this tile's bounds AND is a left click/touch
+            if (mouseX >= tileX && mouseX <= tileX + gameState.tileSize &&
+                mouseY >= tileY && mouseY <= tileY + gameState.tileSize && mouseButton !== RIGHT) {
 
-                // --- Handle different click modes based on the clicked tile ---
+                // Determine action based on current game mode:
 
-                // 1. Selecting tile to keep (Solo mode end turn - only current player)
+                // A. Selecting Tile to Keep (Solo Mode - End Turn Step 1)
                 if (gameState.selectingTileToKeep && playerIndex === gameState.currentPlayer) {
                     let keptTile = player.tiles[i];
                     let discardCount = player.tiles.length - 1;
-                    player.tiles = [keptTile]; // Keep only the clicked tile
-                    addMessage(`Kept 1 tile and discarded ${discardCount} tiles.`);
-                    gameState.selectingTileToKeep = false;
-                    endTurn(); // Proceed with ending the turn (which also centers view)
+                    player.tiles = [keptTile]; // Replace hand with only the selected tile
+                    addMessage(`Kept tile ${keptTile.id}. Discarded ${discardCount}.`);
+                    gameState.selectingTileToKeep = false; // Exit selection mode
+                    endTurn(); // Proceed to finish the turn (draws tiles, resets tokens, centers view)
                     return false; // Action handled
                 }
 
-                // 2. Discarding tile for movement (Current player only)
+                // B. Selecting Tile to Discard for Movement (Current Player Only)
                 if (gameState.discardMode && playerIndex === gameState.currentPlayer) {
-                    discardTileForMovement(i); // This will set movementMode = true
-                    centerViewOnCurrentShip(); // <<< CENTER VIEW when initiating discard-move
+                    discardTileForMovement(i); // Discards tile, sets movementMode = true
+                    centerViewOnCurrentShip(); // Center view to prepare for movement click
+                    // touchStarted checks gameState.movementMode to prevent panning.
                     return false; // Action handled
                 }
 
-                // 3. Swap Mode (Can click on either player's tiles - Not in solo mode)
+                // C. Selecting Tile for Swap (2-Player Mode Only)
                 if (gameState.swapMode && !gameState.soloMode) {
                     if (gameState.swapTileIndex === -1) {
-                        // First tile selected (from any player)
+                        // First tile selection (can be from either player's hand)
                         gameState.swapTileIndex = i;
-                        gameState.swapPlayerIndex = playerIndex; // Store WHICH player's tile was clicked
-                        let messagePlayerNum = playerIndex + 1;
-                        addMessage(`Selected Player ${messagePlayerNum}'s tile #${tile.id}. Now select a tile from the other player.`);
+                        gameState.swapPlayerIndex = playerIndex;
+                        addMessage(`Selected P${playerIndex + 1}'s tile ${tile.id}. Click tile from other player.`);
                     } else {
-                        // Second tile selected - check if it's the OTHER player
+                        // Second tile selection
                         if (playerIndex !== gameState.swapPlayerIndex) {
-                             // Call the updated swapTiles function with all details
+                             // Execute the swap if selected from the *other* player
                              swapTiles(gameState.swapTileIndex, gameState.swapPlayerIndex, i, playerIndex);
-                             // swapTiles resets swapMode etc.
-                             // Don't center view on swap
+                             // swapTiles resets swapMode state. View does not change.
                         } else {
-                            // Clicked on the same player's hand again - reset selection
-                             addMessage("Cannot swap with yourself. Swap selection cleared. Click Swap Tile again or select your tile.");
+                            // Clicked on the same player's hand again - cancel or reselect? Resetting is simpler.
+                             addMessage("Cannot swap with yourself. Selection cleared.");
                              gameState.swapTileIndex = -1;
                              gameState.swapPlayerIndex = -1;
                         }
                     }
-                    // Regardless of first/second click in swap mode, the click is handled here.
-                    return false; // Action handled
+                    // touchStarted checks gameState.swapMode to prevent panning.
+                    return false; // Action handled (either first select, successful swap, or reset)
                 }
 
-                // 4. Default: Start dragging tile to place (Current player only)
-                // Check conditions: Not in other modes, is current player, not panning
+                // D. Default: Start Dragging Tile to Place (Current Player Only)
+                // Check conditions: Not in other modes, it's the current player, not panning
                 if (!gameState.selectingTileToKeep && !gameState.discardMode && !gameState.swapMode &&
                     playerIndex === gameState.currentPlayer && !gameState.isPanning)
                 {
-                    gameState.draggedTile = player.tiles[i];
-                    gameState.draggedTileIndex = i;
-                    centerViewOnCurrentShip(); // <<< CENTER VIEW when selecting tile to drag
-                    gameState.isViewTransitioning = false; // Stop transition immediately if one was happening
+                    gameState.draggedTile = player.tiles[i]; // Store ref to tile being dragged
+                    gameState.draggedTileIndex = i;         // Store its index in hand for removal on success
+                    centerViewOnCurrentShip(); // Center view immediately when drag starts
+                    gameState.isViewTransitioning = false; // Stop any ongoing centering instantly
                     console.log("Dragging started for tile:", gameState.draggedTile.id);
-                    return false; // Action handled (dragging will start)
+                    // touchStarted checks gameState.draggedTile to prevent panning.
+                    return false; // Action handled (dragging initiated)
                 }
 
-                // If we reach here, it means a click occurred on a tile but didn't match
-                // any active mode's criteria (e.g., clicked opponent tile when not swapping).
-                // We simply return to prevent default browser actions.
-                return false;
+                // If click was on a tile but didn't match any active mode's criteria
+                // (e.g., clicking opponent's tile when not swapping).
+                console.log(`Clicked on P${playerIndex+1}'s tile ${tile.id} but no action taken in current mode.`);
+                return false; // Prevent default browser action
 
             } // End if click is within tile bounds and left mouse button
         } // End loop through this player's tiles
     } // End loop through all players
 
-
-    // If the click wasn't on any specific UI element (buttons, tiles, ship for movement),
-    // and wasn't handled by panning or cancelling movement mode, it was likely a click
-    // on the empty board or an inactive element. We do nothing but prevent default.
-    console.log("Clicked on empty space or unhandled area.");
-    return false; // Prevent default browser actions for any unhandled clicks too
+    // 9. Unhandled Click
+    // If the click wasn't on any UI element, map interaction, or hand tile,
+    // and wasn't a right-click pan start, then it's an unhandled click on empty space.
+    // We do nothing but prevent default browser actions.
+    // Left-click/touch panning initiation is handled by touchStarted *after* this.
+    if (mouseButton !== RIGHT) {
+         console.log("Left Click/Touch on empty space or unhandled area - no action.");
+    }
+    return false; // Prevent default browser actions for any clicks reaching this point
 
 } // End of mousePressed function
 
@@ -2093,126 +2131,121 @@ function isFullyExplored(x, y) {
 // Add these functions to handle touch events
 
 function touchStarted() {
-  if (touches.length === 0) return false;
+    // Make sure we have touches before accessing them
+    if (touches.length === 0) return false; // Exit if no touch data
 
-  mouseX = touches[0].x;
-  mouseY = touches[0].y;
-  gameState.touchStartPos = { x: mouseX, y: mouseY }; // Store initial touch
+    // Update mouseX/mouseY from the first touch for mousePressed logic
+    mouseX = touches[0].x;
+    mouseY = touches[0].y;
+    gameState.touchStartPos = { x: mouseX, y: mouseY }; // Store initial touch position
 
-  // --- Check conditions required for other actions BEFORE checking for panning ---
-  let isDraggingTile = !!gameState.draggedTile; // Already dragging? (Shouldn't happen on touchStart, but check)
-  let isShipSelected = gameState.movementMode;
-  let isSwapping = gameState.swapMode;
-  let isDiscarding = gameState.discardMode;
-  let isSelectingToKeep = gameState.selectingTileToKeep;
+    // Immediately call mousePressed() to handle UI checks (buttons, tiles, ship)
+    // mousePressed will return false if it handled an action.
+    // We don't store the return value directly, but check game state changes *after* it runs.
+    mousePressed();
 
-  let canStartPanning = !isDraggingTile && !isShipSelected && !isSwapping && !isDiscarding && !isSelectingToKeep;
+    // --- Decide whether to start panning ---
+    // Check if mousePressed resulted in an action (dragging, mode change)
+    let actionTaken = gameState.draggedTile ||
+                      gameState.movementMode ||
+                      gameState.swapMode ||
+                      gameState.discardMode ||
+                      gameState.selectingTileToKeep ||
+                      gameState.showInstructions; // Consider toggling instructions an action
 
-  // Check if touching a UI element (buttons, player hand tiles)
-  let touchingUI = false;
-  // Rough check for buttons area
-  if (mouseY < 100 || mouseY > height - gameState.tileSize * 1.6) {
-      touchingUI = true; // Assume touches near top/bottom are UI
-  }
-   // Add more specific checks if needed (e.g., checking actual button/tile rects)
+    // Start panning ONLY if no specific game action was initiated by mousePressed
+    if (!actionTaken && gameState.gameStarted) { // Also ensure game is started before allowing panning
+        // Check if we are NOT currently panning (safety check)
+        if (!gameState.isPanning) {
+            gameState.isPanning = true;
+            gameState.panStartX = mouseX;
+            gameState.panStartY = mouseY;
+            gameState.panStartViewX = gameState.viewX; // Store current view center
+            gameState.panStartViewY = gameState.viewY;
+            gameState.isViewTransitioning = false; // Stop any auto-centering
+            console.log("Panning started (touch - decided after mousePressed)");
+        }
+    } else {
+        // If an action *was* taken by mousePressed, ensure panning is off
+        gameState.isPanning = false;
+    }
+    // --- End Panning Decision ---
 
 
-  // --- PANNING LOGIC (Touch) ---
-  // Start panning ONLY if not interacting with UI and nothing else is active
-  if (!touchingUI && canStartPanning) {
-      gameState.isPanning = true;
-      gameState.panStartX = mouseX;
-      gameState.panStartY = mouseY;
-      gameState.panStartViewX = gameState.viewX;
-      gameState.panStartViewY = gameState.viewY;
-      gameState.isViewTransitioning = false; // Stop auto-centering
-      console.log("Panning started (touch)");
-      return false; // Prevent other touch actions like starting a drag
-  }
-  // --- END PANNING LOGIC ---
-
-
-  // If not panning, proceed with normal mousePressed logic
-  // mousePressed() will handle button clicks, tile selection/drag start, ship selection etc.
-  // It uses the updated mouseX/mouseY.
-  console.log("Touch calling mousePressed");
-  mousePressed(); // Call the unified logic
-
-  return false; // Prevent default browser actions like scrolling/zooming
+    // Prevent default browser actions like scrolling/zooming
+    return false;
 }
 
 function touchMoved() {
-  if (touches.length === 0 || !gameState.touchStartPos) return false; // Need touch data and start pos
+    if (touches.length === 0 || !gameState.touchStartPos) return false; // Need touch data and start pos
 
-  mouseX = touches[0].x; // Update mouseX/Y for consistency
-  mouseY = touches[0].y;
+    // Update mouseX/mouseY for consistency if needed elsewhere (like draw())
+    mouseX = touches[0].x;
+    mouseY = touches[0].y;
 
-  // --- PANNING LOGIC (Touch) ---
-  if (gameState.isPanning) {
-      let deltaX = mouseX - gameState.panStartX;
-      let deltaY = mouseY - gameState.panStartY;
+    // --- PANNING LOGIC (Touch) ---
+    // If panning was started in touchStarted, update the view
+    if (gameState.isPanning) {
+        let deltaX = mouseX - gameState.panStartX;
+        let deltaY = mouseY - gameState.panStartY;
 
-      // Convert screen pixel delta to grid coordinate delta
-      gameState.viewX = gameState.panStartViewX - deltaX / gameState.tileSize;
-      gameState.viewY = gameState.panStartViewY - deltaY / gameState.tileSize;
+        // Convert screen pixel delta to grid coordinate delta
+        gameState.viewX = gameState.panStartViewX - deltaX / gameState.tileSize;
+        gameState.viewY = gameState.panStartViewY - deltaY / gameState.tileSize;
 
-      // Keep target synced
-      gameState.targetViewX = gameState.viewX;
-      gameState.targetViewY = gameState.viewY;
+        // Keep target synced
+        gameState.targetViewX = gameState.viewX;
+        gameState.targetViewY = gameState.viewY;
 
-      // console.log(`Touch Panning: view=(${gameState.viewX.toFixed(2)}, ${gameState.viewY.toFixed(2)})`); // Can enable for debugging
-      return false; // Prevent scrolling and other actions
-  }
-  // --- END PANNING LOGIC ---
+        // console.log(`Touch Panning: view=(${gameState.viewX.toFixed(2)}, ${gameState.viewY.toFixed(2)})`);
+        return false; // Prevent scrolling and other actions
+    }
+    // --- END PANNING LOGIC ---
 
-  // If we have a dragged tile (started via touch -> mousePressed -> drag start)
-  if (gameState.draggedTile) {
-      // Tile follows touch via mouseX/mouseY update + draw() function
-      // Call mouseDragged equivalent logic if needed (currently empty for tile drag)
-      // mouseDragged(); // Call if mouseDragged has specific logic for tile dragging
-      return false; // Prevent default scrolling
-  }
+    // If we have a dragged tile (started via touch -> mousePressed -> drag start)
+    // The tile follows the touch position visually via the main draw() loop
+    // using the updated mouseX/mouseY. No specific action needed here unless
+    // you add complex drag effects.
+    if (gameState.draggedTile) {
+        // mouseDragged(); // Only call if mouseDragged has specific logic for tile dragging itself
+        return false; // Prevent default scrolling
+    }
 
-  return false; // Prevent default scrolling/zooming
+    return false; // Prevent default scrolling/zooming if not panning or dragging
 }
 
 function touchEnded() {
     // --- PANNING LOGIC ---
+    // If panning was active, stop it.
     if (gameState.isPanning) {
         gameState.isPanning = false;
         gameState.touchStartPos = null; // Clear touch start position
-        console.log("Panning stopped (touch)");
-        // Don't call mouseReleased here, panning is its own action.
+        console.log("Panning stopped (touch end)");
+        // Don't call mouseReleased here, panning was its own action.
         return false; // Prevent potential clicks from registering after pan
     }
     // --- END PANNING LOGIC ---
 
-    // If we have a touch start position (meaning touchStarted was called)
-    // and we weren't panning...
+    // If we weren't panning, but a touch sequence occurred...
     if (gameState.touchStartPos) {
-        // If we were dragging a tile (which should have been initiated by touchStarted -> mousePressed)
+        // Check if we were dragging a tile (initiated by touchStarted -> mousePressed)
         if (gameState.draggedTile) {
-            // Use mouseReleased logic to handle tile placement/cancellation
-            // mouseReleased uses the last known mouseX/mouseY (updated in touchMoved/touchStarted)
+            // Use mouseReleased logic to handle tile placement/cancellation.
+            // mouseReleased uses the last known mouseX/mouseY.
             console.log("Touch calling mouseReleased for tile drop");
-            mouseReleased();
+            mouseReleased(); // Handles placement, state reset, view centering
         } else {
-             // If it wasn't a pan and wasn't a drag, it might have been a tap
-             // mousePressed was already called in touchStarted.
-             // mouseReleased might be needed if mousePressed initiated something
-             // that needs releasing, but taps on empty space/buttons are usually
-             // handled entirely within mousePressed.
-             // Consider if any action started in mousePressed needs a mouseReleased call here.
-             // For safety, maybe call it? Test thoroughly.
-             // console.log("Touch calling mouseReleased for potential tap action end");
-             // mouseReleased(); // Be careful this doesn't trigger unwanted actions
+             // If it wasn't a pan and wasn't a drag, it was a tap.
+             // The action for the tap (button press, ship select) was handled
+             // in mousePressed (called by touchStarted). Nothing more needed here usually.
+             // console.log("Tap ended (no drag, no pan)");
         }
 
-        // Reset touch state
+        // Reset touch state variables
         gameState.touchStartPos = null;
     }
 
-    // Reset isPanning just in case
+    // Ensure panning is definitely off (safety net)
     gameState.isPanning = false;
 
     return false; // Prevent default behavior
