@@ -725,7 +725,7 @@ function drawEdges(rotatedEdges, tile, x, y, tileSize) {
         } else if (!tile.isOpenOcean) {
             // Coastal water - static
         } else {
-            drawOpenOceanWaves(tileSize);
+         //   drawOpenOceanWaves(tileSize);
         }
         pop();
     }
