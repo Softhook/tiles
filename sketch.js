@@ -97,68 +97,100 @@ function setup() {
 }
 
 function createGameAssets() {
-  // Create ship images - making them larger
+  // Create ship images - making them smaller within the same size buffer
   for (let i = 0; i < 2; i++) {
+    // Keep the graphics buffer the same size (tileSize x tileSize) for positioning consistency
     let shipImg = createGraphics(gameState.tileSize, gameState.tileSize);
     let playerColor = i === 0 ? "#ff4444" : "#4444ff";
-    
+
     // Set background to transparent
     shipImg.clear();
-    
-    // Simple sideways-facing ship
+
+    // Use these multipliers for easier scaling if needed again
+    let scale = 0.7; // Draw ship at half size
+    let cx = 0.5;    // Center X proportion
+    let cy = 0.5;    // Center Y proportion
+
+    // Apply scale and center offset to original coordinates
+    // Original point (ox, oy) becomes (cx + (ox - 0.5) * scale, cy + (oy - 0.5) * scale)
+
     shipImg.fill(playerColor);
     shipImg.stroke(0);
-    shipImg.strokeWeight(2);
-    
-    // Hull - simple boat shape facing right
+    // Reduce stroke weight for smaller size
+    shipImg.strokeWeight(1 * scale * 2); // Keep stroke visually similar thickness relative to ship size
+
+    // --- Scaled Hull ---
+    // Original vertices: (0.2, 0.6), (0.8, 0.6), (0.9, 0.4), (0.2, 0.4)
     shipImg.beginShape();
-    shipImg.vertex(shipImg.width*0.2, shipImg.height*0.6);  // Bottom left
-    shipImg.vertex(shipImg.width*0.8, shipImg.height*0.6);  // Bottom right
-    shipImg.vertex(shipImg.width*0.9, shipImg.height*0.4);  // Top right
-    shipImg.vertex(shipImg.width*0.2, shipImg.height*0.4);  // Top left
+    shipImg.vertex(shipImg.width * (cx + (0.2 - 0.5) * scale), shipImg.height * (cy + (0.6 - 0.5) * scale)); // Bottom left -> 0.35, 0.55
+    shipImg.vertex(shipImg.width * (cx + (0.8 - 0.5) * scale), shipImg.height * (cy + (0.6 - 0.5) * scale)); // Bottom right -> 0.65, 0.55
+    shipImg.vertex(shipImg.width * (cx + (0.9 - 0.5) * scale), shipImg.height * (cy + (0.4 - 0.5) * scale)); // Top right -> 0.70, 0.45
+    shipImg.vertex(shipImg.width * (cx + (0.2 - 0.5) * scale), shipImg.height * (cy + (0.4 - 0.5) * scale)); // Top left -> 0.35, 0.45
     shipImg.endShape(CLOSE);
-    
-    // Deck
+
+    // --- Scaled Deck ---
+    // Original: rect(0.25, 0.4, 0.5, 0.05)
+    let deckW = 0.5 * scale;
+    let deckH = 0.05 * scale;
+    let deckX = cx + (0.25 - 0.5) * scale; // Left edge relative to center
+    let deckY = cy + (0.4 - 0.5) * scale; // Top edge relative to center
     shipImg.fill(220, 180, 130);
     shipImg.noStroke();
-    shipImg.rect(shipImg.width*0.25, shipImg.height*0.4, shipImg.width*0.5, shipImg.height*0.05);
-    
-    // Cabin
+    shipImg.rect(shipImg.width * deckX, shipImg.height * deckY, shipImg.width * deckW, shipImg.height * deckH);
+
+    // --- Scaled Cabin ---
+    // Original: rect(0.35, 0.3, 0.25, 0.1)
+    let cabinW = 0.25 * scale;
+    let cabinH = 0.1 * scale;
+    let cabinX = cx + (0.35 - 0.5) * scale;
+    let cabinY = cy + (0.3 - 0.5) * scale;
     shipImg.fill(255);
     shipImg.stroke(0);
-    shipImg.strokeWeight(1);
-    shipImg.rect(shipImg.width*0.35, shipImg.height*0.3, shipImg.width*0.25, shipImg.height*0.1);
-    
-    // Smokestack
+    shipImg.strokeWeight(1); // Keep cabin stroke thin
+    shipImg.rect(shipImg.width * cabinX, shipImg.height * cabinY, shipImg.width * cabinW, shipImg.height * cabinH);
+
+    // --- Scaled Smokestack ---
+    // Original: rect(0.45, 0.2, 0.1, 0.1)
+    let stackW = 0.1 * scale;
+    let stackH = 0.1 * scale;
+    let stackX = cx + (0.45 - 0.5) * scale;
+    let stackY = cy + (0.2 - 0.5) * scale;
     shipImg.fill(80);
-    shipImg.rect(shipImg.width*0.45, shipImg.height*0.2, shipImg.width*0.1, shipImg.height*0.1);
-    
-    // Simple steam
+    shipImg.stroke(0); // Add stroke back for definition
+    shipImg.strokeWeight(1);
+    shipImg.rect(shipImg.width * stackX, shipImg.height * stackY, shipImg.width * stackW, shipImg.height * stackH);
+
+    // --- Scaled Steam ---
+    // Original centered Y roughly 0.15, X roughly 0.5 and 0.45
+    // Original ellipse width 0.1, height 0.05
+    let steamY = cy + (0.15 - 0.5) * scale; // Calculate scaled Y position above stack
+    let steamW = 0.1 * scale;
+    let steamH = 0.05 * scale;
     shipImg.noStroke();
     shipImg.fill(255, 255, 255, 150);
-    shipImg.ellipse(shipImg.width*0.5, shipImg.height*0.15, shipImg.width*0.1, shipImg.width*0.05);
-    shipImg.ellipse(shipImg.width*0.45, shipImg.height*0.15, shipImg.width*0.1, shipImg.width*0.05);
-    
+    shipImg.ellipse(shipImg.width * (cx + (0.50 - 0.5) * scale), shipImg.height * steamY, shipImg.width * steamW, shipImg.height * steamH);
+    shipImg.ellipse(shipImg.width * (cx + (0.45 - 0.5) * scale), shipImg.height * steamY, shipImg.width * steamW, shipImg.height * steamH);
+
 
     shipImages[i] = shipImg;
   }
-  
-  // Create token images
+
+  // Create token images (no change needed here)
   tokenBlue = createGraphics(gameState.tileSize/4, gameState.tileSize/4);
   tokenBlue.noStroke();
   tokenBlue.fill(65, 105, 225); // Royal blue
   tokenBlue.ellipse(tokenBlue.width/2, tokenBlue.height/2, tokenBlue.width, tokenBlue.height);
   tokenBlue.fill(100, 149, 237, 150); // Cornflower blue highlight
   tokenBlue.ellipse(tokenBlue.width/3, tokenBlue.height/3, tokenBlue.width/3, tokenBlue.height/3);
-  
+
   tokenRed = createGraphics(gameState.tileSize/4, gameState.tileSize/4);
   tokenRed.noStroke();
   tokenRed.fill(220, 20, 60); // Crimson red
   tokenRed.ellipse(tokenRed.width/2, tokenRed.height/2, tokenRed.width, tokenRed.height);
   tokenRed.fill(255, 69, 0, 150); // Red-orange highlight
   tokenRed.ellipse(tokenRed.width/3, tokenRed.height/3, tokenRed.width/3, tokenRed.height/3);
-  
-  // Create background
+
+  // Create background (no change needed here)
   backgroundImage = createGraphics(width, height);
   backgroundImage.background(30, 58, 138);
   for (let i = 0; i < 100; i++) {
@@ -859,42 +891,198 @@ function drawSpecialFeatures(tile, rotatedEdges, x, y, tileSize) {
     pop(); // Restore drawing context from the initial translate()
 }
 
+/**
+ * Checks if a given position (relative to tile center) is safely on land,
+ * meaning it's not within the landZoneDepth of *any* water edge.
+ *
+ * @param {number} cx - The x-coordinate relative to the tile center.
+ * @param {number} cy - The y-coordinate relative to the tile center.
+ * @param {array} rotatedEdges - The tile's edges [top, right, bottom, left] (0=water, 1=land).
+ * @param {number} tileSize - The size of the tile.
+ * @param {number} landZoneDepth - The distance from a water edge defining the unsafe zone.
+ * @returns {boolean} - True if the position is safely on land, false otherwise.
+ */
+function checkIfSafeLand(cx, cy, rotatedEdges, tileSize, landZoneDepth) {
+    const halfTile = tileSize / 2;
+    // Define the boundary inside which is considered "safe" relative to an edge
+    const safeBoundary = halfTile - landZoneDepth;
+
+    // Check against each edge
+    for (let i = 0; i < 4; i++) {
+        if (rotatedEdges[i] === 0) { // If it's a water edge
+            switch (i) {
+                case 0: // Top water edge
+                    // Is the point above the safe boundary near the top?
+                    if (cy <= -safeBoundary) return false; // Too close to top water
+                    break;
+                case 1: // Right water edge
+                    // Is the point beyond the safe boundary near the right?
+                    if (cx >= safeBoundary) return false; // Too close to right water
+                    break;
+                case 2: // Bottom water edge
+                    // Is the point below the safe boundary near the bottom?
+                    if (cy >= safeBoundary) return false; // Too close to bottom water
+                    break;
+                case 3: // Left water edge
+                    // Is the point beyond the safe boundary near the left?
+                    if (cx <= -safeBoundary) return false; // Too close to left water
+                    break;
+            }
+        }
+    }
+    // If we checked all water edges and didn't find it too close, it's safe
+    return true;
+}
+
 function drawLighthouse(tile, rotatedEdges, tileSize) {
-    let landEdgeIndex = rotatedEdges.indexOf(1);
-    fill(200);
-    stroke(0);
-    strokeWeight(1);
-    rect(-tileSize * 0.15, -tileSize * 0.0625, tileSize * 0.3, tileSize * 0.5);
-    for (let i = 0; i < 3; i++) {
-        fill(255, 0, 0);
-        rect(-tileSize * 0.15, tileSize * 0.0625 + i * tileSize * 0.125, tileSize * 0.3, tileSize * 0.0625);
+    // --- Define Dimensions and Parameters ---
+    const brownBaseWidth = tileSize * 0.18;
+    const brownBaseHeight = tileSize * 0.08;
+    const towerWidth = tileSize * 0.12;
+    const towerHeight = tileSize * 0.30;
+    const roofHeight = tileSize * 0.07;
+    const lightDiameter = tileSize * 0.10;
+    const lightGlowDiameter = lightDiameter * 1.4;
+    const padding = tileSize * 0.05;
+    const halfTile = tileSize / 2;
+    const maxCoordExtent = halfTile - padding;
+    const inwardOffsetFromEdge = tileSize * 0.25; // Used for non-HQ placement
+
+    // --- Calculate Max Dimensions (including the base) ---
+    const structureHeightAboveBase = towerHeight + roofHeight + (lightDiameter * 0.4) + (lightGlowDiameter / 2);
+    const totalVisualHeightWithBase = structureHeightAboveBase + brownBaseHeight;
+    const maxWidth = Math.max(brownBaseWidth, towerWidth * 1.2, lightGlowDiameter);
+
+    // --- Calculate vertical offsets from the base footprint center ---
+    const structureBottomOffsetY = brownBaseHeight / 2;
+    const structureTopOffsetY = -(brownBaseHeight / 2) - structureHeightAboveBase;
+
+    // --- Determine Initial Target Position ---
+    let initialTargetX = 0;
+    let initialTargetY = 0;
+    let placeNearEdge = -1; // Used for random offset direction for non-HQ
+
+    if (tile.id === 0) {
+        // *** HQ Lighthouse: Target the center (0,0) ***
+        initialTargetX = 0;
+        initialTargetY = 0;
+        // No edge placement or random offset for HQ
+    } else {
+        // *** Non-HQ Lighthouses: Target near a land edge ***
+        let landEdgeIndex = rotatedEdges.indexOf(1);
+        if (landEdgeIndex !== -1) { // Found a land edge
+            placeNearEdge = landEdgeIndex;
+            switch (placeNearEdge) {
+                case 0: initialTargetY = -halfTile + inwardOffsetFromEdge; break;
+                case 1: initialTargetX =  halfTile - inwardOffsetFromEdge; break;
+                case 2: initialTargetY =  halfTile - inwardOffsetFromEdge; break;
+                case 3: initialTargetX = -halfTile + inwardOffsetFromEdge; break;
+            }
+        } else { // Error case: Non-HQ lighthouse with no land edge? Place centrally.
+            console.warn(`Lighthouse tile ${tile.id} has no land edge? Placing centrally.`);
+            initialTargetX = 0;
+            initialTargetY = 0;
+            placeNearEdge = -1; // Indicate no specific edge
+        }
+
+        // --- Add slight random offset ONLY for non-HQ tiles placed near an edge ---
+        if (placeNearEdge !== -1) {
+             randomSeed( (tile.id || 0) * 11 + (tile.x || 0) * 5 + (tile.y || 0) * 7);
+             let randomOffset = random(-tileSize * 0.08, tileSize * 0.08);
+             if (placeNearEdge === 0 || placeNearEdge === 2) { initialTargetX += randomOffset; }
+             else if (placeNearEdge === 1 || placeNearEdge === 3) { initialTargetY += randomOffset; }
+             randomSeed();
+        }
     }
-    fill(150);
-    rect(-tileSize * 0.1875, -tileSize * 0.1875, tileSize * 0.375, tileSize * 0.125);
-    fill(255);
-    stroke(0);
-    ellipse(0, -tileSize * 0.25, tileSize * 0.25, tileSize * 0.25);
-    if (landEdgeIndex !== -1) {
-        rotate(landEdgeIndex * HALF_PI);
-    }
+
+    // --- Calculate Final Constrained Position (always considers base dimensions) ---
+    let constrainedTargetX = constrain(
+        initialTargetX,
+        -maxCoordExtent + maxWidth / 2, // Ensure max width fits
+         maxCoordExtent - maxWidth / 2
+    );
+    let constrainedTargetY = constrain(
+        initialTargetY,
+        -maxCoordExtent - structureTopOffsetY,    // Ensure top fits
+         maxCoordExtent - structureBottomOffsetY // Ensure bottom fits
+    );
+
+    // --- Draw Lighthouse at Final Position ---
+    push();
+    translate(constrainedTargetX, constrainedTargetY); // Move to final position
+
+    // Calculate final Y coordinates relative to constrained center (0,0), always including base height
+    let baseTopRelY = -brownBaseHeight / 2;
+    let towerBottomRelY = baseTopRelY;
+    let towerTopRelY = towerBottomRelY - towerHeight;
+    let roofBottomRelY = towerTopRelY;
+    let roofTopRelY = roofBottomRelY - roofHeight;
+    let lightCenterRelY = roofTopRelY - (lightDiameter * 0.4);
+
+    // --- Always Draw the Brown Base ---
+    fill(139, 69, 19); noStroke(); rectMode(CENTER);
+    rect(0, 0, brownBaseWidth, brownBaseHeight, 3);
+    rectMode(CORNER);
+
+    // Draw Tower
+    fill(220, 220, 220); stroke(50); strokeWeight(1);
+    rect(-towerWidth / 2, towerTopRelY, towerWidth, towerHeight);
+
+    // Draw Two Red Stripes
+    fill(255, 0, 0); noStroke();
+    const stripeHeight = towerHeight / 5.0;
+    const stripe1TopY = towerTopRelY + stripeHeight;
+    rect(-towerWidth / 2, stripe1TopY, towerWidth, stripeHeight);
+    const stripe2TopY = towerTopRelY + stripeHeight * 3;
+    rect(-towerWidth / 2, stripe2TopY, towerWidth, stripeHeight);
+
+    // Draw Roof
+    fill(100); stroke(50); strokeWeight(1);
+    beginShape();
+    vertex(-towerWidth * 0.6, roofBottomRelY); vertex(towerWidth * 0.6, roofBottomRelY);
+    vertex(towerWidth * 0.5, roofTopRelY);   vertex(-towerWidth * 0.5, roofTopRelY);
+    endShape(CLOSE);
+
+    // Draw Light
+    fill(255, 255, 150, 180); noStroke(); // Glow
+    ellipse(0, lightCenterRelY, lightGlowDiameter, lightGlowDiameter);
+    fill(255, 255, 0); stroke(50); strokeWeight(1); // Bulb
+    ellipse(0, lightCenterRelY, lightDiameter, lightDiameter);
+
+    pop();
 }
 
 function drawBeacon(tileSize) {
+    // --- Reduced size multipliers ---
+    const outerDiameter = tileSize * 0.24; // Was 0.3125
+    const rectWidth = tileSize * 0.21;     // Was 0.3
+    const rectHeight = tileSize * 0.09;    // Was 0.125
+    const innerDiameter = tileSize * 0.09; // Was 0.125
+    const glowDiameter = tileSize * 0.15;  // Was 0.1875
+
+    // Draw centered at the current origin (0,0)
     stroke(0);
-    strokeWeight(2);
-    fill(255, 0, 0);
-    ellipse(0, 0, tileSize * 0.3125, tileSize * 0.3125);
-    fill(255);
+    strokeWeight(1.5); // Slightly thinner stroke
+    fill(255, 0, 0); // Red base
+    ellipse(0, 0, outerDiameter, outerDiameter); // Outer red circle
+
+    fill(255); // White middle band
     noStroke();
-    rect(-tileSize * 0.15, -tileSize * 0.0625, tileSize * 0.3, tileSize * 0.125);
-    fill(255, 255, 0);
+    rectMode(CENTER); // Use center mode for easier centering
+    rect(0, 0, rectWidth, rectHeight); // Centered white rectangle
+    rectMode(CORNER); // Reset rect mode
+
+    fill(255, 255, 0); // Yellow light bulb
     stroke(0);
     strokeWeight(1);
-    ellipse(0, 0, tileSize * 0.125, tileSize * 0.125);
-    let blinkSpeed = 0.1;
+    ellipse(0, 0, innerDiameter, innerDiameter); // Inner yellow circle
+
+    // Blinking glow
+    let blinkSpeed = 0.05;
     let blinkIntensity = 100 + sin(frameCount * blinkSpeed) * 50;
-    fill(255, 255, 0, blinkIntensity);
-    ellipse(0, 0, tileSize * 0.1875, tileSize * 0.1875);
+    noStroke();
+    fill(255, 255, 0, blinkIntensity); // Yellow glow, intensity varies
+    ellipse(0, 0, glowDiameter, glowDiameter); // Yellow glow ellipse
 }
 
 
